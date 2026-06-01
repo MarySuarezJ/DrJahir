@@ -429,6 +429,8 @@ create or replace function public.current_app_role()
 returns app_role
 language sql
 stable
+security definer
+set search_path = public
 as $$
   select coalesce((select role from public.profiles where id = auth.uid()), 'secretaria'::app_role);
 $$;
@@ -437,6 +439,8 @@ create or replace function public.is_admin()
 returns boolean
 language sql
 stable
+security definer
+set search_path = public
 as $$
   select public.current_app_role() = 'admin_principal';
 $$;
@@ -445,6 +449,8 @@ create or replace function public.has_territory_access(p_municipality uuid, p_co
 returns boolean
 language sql
 stable
+security definer
+set search_path = public
 as $$
   select exists (
     select 1
@@ -462,6 +468,8 @@ create or replace function public.leader_has_territory_access(p_leader_id uuid)
 returns boolean
 language sql
 stable
+security definer
+set search_path = public
 as $$
   select exists (
     select 1
