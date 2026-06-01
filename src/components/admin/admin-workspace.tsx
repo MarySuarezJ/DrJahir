@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { StatCard } from "@/components/ui/stat-card";
 import { Textarea } from "@/components/ui/textarea";
+import { ExcelImportPanel } from "@/components/admin/excel-import-panel";
 import { useDemoSession } from "@/components/providers/demo-session-provider";
 import {
   adminUsersSeed,
@@ -169,6 +170,8 @@ export function AdminWorkspace() {
         <StatCard label="Gestores de alertas" value={String(stats.alertManagers)} hint="Permiso especial" delta="Días importantes" icon={<BellRing className="h-5 w-5" />} tone="navy" />
         <StatCard label="Alertas listas" value={String(stats.activeAlerts)} hint="Activas o programadas" delta={`${alerts.length} reglas`} icon={<CalendarPlus className="h-5 w-5" />} tone="neutral" />
       </div>
+
+      <ExcelImportPanel role={role} />
 
       <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <Card>

@@ -71,6 +71,8 @@ Carga primero:
 - Plantillas de automatización y fechas importantes en `automation_templates` e `important_dates`.
 - Accesos territoriales por usuario en `user_territory_access`.
 
+La carga territorial, de personas y de fechas importantes también se puede hacer desde el módulo `Administración` con la plantilla `/templates/carga-masiva-dr-jahir.xlsx`. La guía detallada está en `docs/07-carga-masiva-excel.md`.
+
 Para archivos grandes usa Supabase Storage y guarda en la base solo `storage_bucket` y `storage_path`.
 
 ## 5. GitHub
