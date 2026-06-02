@@ -3,7 +3,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, LockKeyhole, User, Eye, EyeOff } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -75,10 +74,6 @@ export function LoginForm() {
   return (
     <Card className="overflow-hidden border-brand-line bg-white/86">
       <CardHeader className="space-y-4 border-b border-brand-line bg-brand-cream/80 px-7 py-6">
-        <div className="flex items-center justify-between gap-4">
-          <Badge variant="gold">Acceso seguro</Badge>
-          <Badge variant="neutral">Supabase Auth</Badge>
-        </div>
         <div>
           <p className="text-xs uppercase tracking-[0.32em] text-brand-muted">Acceso privado</p>
           <h2 className="mt-2 font-display text-3xl font-semibold text-brand-ink">Entrar al comando territorial</h2>
@@ -136,7 +131,7 @@ export function LoginForm() {
 
           <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-sm text-brand-ink/58">
-              {hasSupabaseBrowserConfig() ? "Autenticación conectada a Supabase" : "Acceso temporal de revisión local"}
+              Acceso autorizado para el equipo territorial
             </span>
             <Button variant="gold" size="lg" type="submit" className="w-full sm:w-auto" disabled={loading}>
               {loading ? "Validando..." : "Ingresar al dashboard"}
