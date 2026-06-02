@@ -16,6 +16,7 @@ export type PersonRecord = {
   firstName: string;
   lastName: string;
   documentNumber: string;
+  birthDate?: string;
   phone: string;
   whatsapp: string;
   email: string;

@@ -1,6 +1,5 @@
 import type { NavigationItem } from "@/lib/types/domain";
 import {
-  FileText,
   GitBranch,
   LayoutDashboard,
   Map,
@@ -46,13 +45,6 @@ export const navigationItems: Array<NavigationItem & { icon: typeof LayoutDashbo
     description: "Cumpleaños, profesión y campañas.",
     roles: ["admin_principal", "secretaria"],
     icon: Megaphone
-  },
-  {
-    label: "Documentos",
-    href: "/dashboard/documents",
-    description: "Hojas de vida, PDFs y fotos.",
-    roles: ["admin_principal", "doctor", "secretaria", "abogado"],
-    icon: FileText
   },
   {
     label: "Administración",

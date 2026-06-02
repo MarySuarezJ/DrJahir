@@ -17,6 +17,7 @@ type DbPerson = {
   first_name: string;
   last_name: string;
   document_number: string;
+  fecha_nacimiento: string | null;
   phone: string | null;
   whatsapp: string | null;
   email: string | null;
@@ -59,6 +60,7 @@ const personSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   documentNumber: z.string().min(3),
+  birthDate: z.string().optional().default(""),
   phone: z.string().optional().default(""),
   whatsapp: z.string().optional().default(""),
   email: z.string().optional().default(""),
@@ -188,7 +190,7 @@ export async function GET() {
   const { data: peopleRows, error: peopleError } = await admin
     .from("personas")
     .select(
-      "id,kind,leader_id,first_name,last_name,document_number,phone,whatsapp,email,address,barrio,comuna,municipality_id,commune_id,neighborhood_id,department_id,profession,company,job_title,employment_status,voting_center_id,voting_table_id,photo_path,resume_path,notes,support_label,support_score,visibility_scope"
+      "id,kind,leader_id,first_name,last_name,document_number,fecha_nacimiento,phone,whatsapp,email,address,barrio,comuna,municipality_id,commune_id,neighborhood_id,department_id,profession,company,job_title,employment_status,voting_center_id,voting_table_id,photo_path,resume_path,notes,support_label,support_score,visibility_scope"
     )
     .order("created_at", { ascending: false });
 
@@ -229,6 +231,7 @@ export async function GET() {
       firstName: row.first_name,
       lastName: row.last_name,
       documentNumber: row.document_number,
+      birthDate: row.fecha_nacimiento ?? "",
       phone: row.phone ?? "",
       whatsapp: row.whatsapp ?? "",
       email: row.email ?? "",
@@ -367,6 +370,7 @@ export async function POST(request: Request) {
           first_name: person.firstName.trim(),
           last_name: person.lastName.trim(),
           document_number: person.documentNumber.trim(),
+          fecha_nacimiento: cleanText(person.birthDate),
           phone: cleanText(person.phone),
           whatsapp: cleanText(person.whatsapp),
           email: cleanText(person.email?.toLowerCase()),

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   BadgeCheck,
   Download,
@@ -28,10 +29,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatCard } from "@/components/ui/stat-card";
 import { hasSupabaseBrowserConfig } from "@/lib/supabase/client";
+import { fileViewUrl } from "@/lib/files/storage-ref";
 import { cn } from "@/lib/utils";
 
 function ResumeViewer({ url, name, onClose }: { url: string; name: string; onClose: () => void }) {
   const isImage = url.match(/\.(jpg|jpeg|png|webp|gif)$/i) || url.includes("image/");
+  const viewUrl = fileViewUrl(url);
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-brand-ink/78 p-4 backdrop-blur-sm">
@@ -46,7 +49,7 @@ function ResumeViewer({ url, name, onClose }: { url: string; name: string; onClo
           </div>
           <div className="flex items-center gap-2">
             <a
-              href={url}
+              href={viewUrl}
               download
               target="_blank"
               rel="noreferrer"
@@ -65,10 +68,10 @@ function ResumeViewer({ url, name, onClose }: { url: string; name: string; onClo
           {isImage ? (
             <div className="flex h-full items-center justify-center overflow-auto p-6">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={url} alt={name} className="max-h-full max-w-full rounded-xl object-contain shadow-xl" />
+              <img src={viewUrl} alt={name} className="max-h-full max-w-full rounded-xl object-contain shadow-xl" />
             </div>
           ) : (
-            <iframe src={url} title={name} className="h-full w-full border-0" />
+            <iframe src={viewUrl} title={name} className="h-full w-full border-0" />
           )}
         </div>
       </div>
@@ -81,6 +84,7 @@ const blankPerson = (): PersonRecord => ({
   firstName: "",
   lastName: "",
   documentNumber: "",
+  birthDate: "",
   phone: "",
   whatsapp: "",
   email: "",
@@ -123,18 +127,25 @@ function isLeader(person: PersonRecord) {
   return person.supportLabel.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes("lider");
 }
 
-export function PeopleWorkspace() {
+type PeopleWorkspaceProps = {
+  initialMode?: "view" | "create";
+};
+
+export function PeopleWorkspace({ initialMode = "view" }: PeopleWorkspaceProps = {}) {
+  const router = useRouter();
+  const startsCreating = initialMode === "create";
   const [people, setPeople] = useState<PersonRecord[]>(peopleSeed);
-  const [selectedId, setSelectedId] = useState(peopleSeed[0]?.id ?? "");
+  const [selectedId, setSelectedId] = useState(startsCreating ? "" : peopleSeed[0]?.id ?? "");
   const [selectedLeaderDocument, setSelectedLeaderDocument] = useState(peopleSeed.find(isLeader)?.documentNumber ?? "");
   const [search, setSearch] = useState("");
   const [municipalityFilter, setMunicipalityFilter] = useState("all");
-  const [draft, setDraft] = useState<PersonRecord>(peopleSeed[0] ?? blankPerson());
-  const [mode, setMode] = useState<"view" | "create">("view");
+  const [draft, setDraft] = useState<PersonRecord>(startsCreating ? blankPerson() : peopleSeed[0] ?? blankPerson());
+  const [mode, setMode] = useState<"view" | "create">(startsCreating ? "create" : "view");
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const [viewerName, setViewerName] = useState("");
   const [syncMessage, setSyncMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState<"photo" | "resume" | null>(null);
   const resumeInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
@@ -157,12 +168,21 @@ export function PeopleWorkspace() {
     const nextLeader = nextSelected && isLeader(nextSelected) ? nextSelected : nextPeople.find(isLeader);
 
     setPeople(nextPeople);
+    if (startsCreating && !preferredDocumentNumber) {
+      setSelectedId("");
+      setDraft(blankPerson());
+      setMode("create");
+      setSelectedLeaderDocument(nextPeople.find(isLeader)?.documentNumber ?? "");
+      setSyncMessage(nextPeople.length > 0 ? "Datos cargados desde Supabase. Completa el nuevo registro." : "Supabase conectado. Completa el primer registro.");
+      return;
+    }
+
     setSelectedId(nextSelected?.id ?? "");
     setDraft(nextSelected ?? blankPerson());
     setMode(nextSelected ? "view" : "create");
     setSelectedLeaderDocument(nextLeader?.documentNumber ?? "");
     setSyncMessage(nextPeople.length > 0 ? "Datos cargados desde Supabase." : "Supabase conectado. Aún no hay personas cargadas.");
-  }, []);
+  }, [startsCreating]);
 
   useEffect(() => {
     if (hasSupabaseBrowserConfig()) {
@@ -229,11 +249,7 @@ export function PeopleWorkspace() {
   }
 
   function createNew() {
-    setMode("create");
-    const nextDraft = blankPerson();
-    nextDraft.municipality = municipalityFilter === "all" ? "Manizales" : municipalityFilter;
-    syncDraft(nextDraft);
-    setSelectedId("");
+    router.push("/dashboard/people/new");
   }
 
   function updateField<K extends keyof PersonRecord>(field: K, value: PersonRecord[K]) {
@@ -349,12 +365,37 @@ export function PeopleWorkspace() {
     }
   }
 
-  function handleResumeUpload(file: File) {
-    updateField("resumePath", URL.createObjectURL(file));
-  }
+  async function uploadPersonFile(file: File, kind: "photo" | "resume") {
+    if (!hasSupabaseBrowserConfig()) {
+      updateField(kind === "photo" ? "photoPath" : "resumePath", URL.createObjectURL(file));
+      return;
+    }
 
-  function handlePhotoUpload(file: File) {
-    updateField("photoPath", URL.createObjectURL(file));
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("kind", kind);
+    formData.append("documentNumber", draft.documentNumber);
+
+    setUploadingFile(kind);
+    setSyncMessage(kind === "photo" ? "Subiendo foto a Supabase Storage..." : "Subiendo hoja de vida a Supabase Storage...");
+
+    try {
+      const response = await fetch("/api/files/upload", {
+        method: "POST",
+        body: formData
+      });
+      const data = (await response.json()) as { storageRef?: string; error?: string };
+
+      if (!response.ok || !data.storageRef) {
+        setSyncMessage(data.error ?? "No se pudo subir el archivo.");
+        return;
+      }
+
+      updateField(kind === "photo" ? "photoPath" : "resumePath", data.storageRef);
+      setSyncMessage(kind === "photo" ? "Foto cargada. Guarda la persona para asociarla." : "Hoja de vida cargada. Guarda la persona para asociarla.");
+    } finally {
+      setUploadingFile(null);
+    }
   }
 
   function openViewer(url: string, name: string) {
@@ -566,6 +607,7 @@ export function PeopleWorkspace() {
               <Input value={draft.firstName} onChange={(event) => updateField("firstName", event.target.value)} placeholder="Nombres" />
               <Input value={draft.lastName} onChange={(event) => updateField("lastName", event.target.value)} placeholder="Apellidos" />
               <Input value={draft.documentNumber} onChange={(event) => updateField("documentNumber", event.target.value)} placeholder="Cédula" />
+              <Input value={draft.birthDate ?? ""} onChange={(event) => updateField("birthDate", event.target.value)} placeholder="Fecha de nacimiento" type="date" />
               <Select value={draft.supportLabel} onChange={(event) => updateField("supportLabel", event.target.value)}>
                 <option value="Líder">Líder</option>
                 <option value="Voluntario">Voluntario</option>
@@ -644,19 +686,23 @@ export function PeopleWorkspace() {
                   {draft.photoPath ? (
                     <>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={draft.photoPath} alt="Foto" className="h-14 w-14 rounded-xl border border-brand-line object-cover" />
+                      <img src={fileViewUrl(draft.photoPath)} alt="Foto" className="h-14 w-14 rounded-xl border border-brand-line object-cover" />
                       <Button variant="ghost" size="sm" onClick={() => openViewer(draft.photoPath, `Foto - ${fullName(draft)}`)}>
                         <Eye className="h-3.5 w-3.5" />
                         Ver
                       </Button>
+                      <Button variant="ghost" size="sm" onClick={() => photoInputRef.current?.click()} disabled={uploadingFile === "photo"}>
+                        <ImageIcon className="h-3.5 w-3.5" />
+                        Cambiar
+                      </Button>
                     </>
                   ) : (
-                    <Button variant="ghost" size="sm" onClick={() => photoInputRef.current?.click()}>
+                    <Button variant="ghost" size="sm" onClick={() => photoInputRef.current?.click()} disabled={uploadingFile === "photo"}>
                       <ImageIcon className="h-3.5 w-3.5" />
-                      Subir foto
+                      {uploadingFile === "photo" ? "Subiendo..." : "Subir foto"}
                     </Button>
                   )}
-                  <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) handlePhotoUpload(file); }} />
+                  <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadPersonFile(file, "photo"); }} />
                 </div>
               </div>
 
@@ -664,17 +710,23 @@ export function PeopleWorkspace() {
                 <p className="text-xs uppercase tracking-widest text-brand-muted">Hoja de vida</p>
                 <div className="mt-3 flex flex-wrap items-center gap-3">
                   {draft.resumePath ? (
-                    <Button variant="gold" size="sm" onClick={() => openViewer(draft.resumePath, `Hoja de vida - ${fullName(draft)}`)}>
-                      <Eye className="h-3.5 w-3.5" />
-                      Ver hoja de vida
-                    </Button>
+                    <>
+                      <Button variant="gold" size="sm" onClick={() => openViewer(draft.resumePath, `Hoja de vida - ${fullName(draft)}`)}>
+                        <Eye className="h-3.5 w-3.5" />
+                        Ver hoja de vida
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => resumeInputRef.current?.click()} disabled={uploadingFile === "resume"}>
+                        <Upload className="h-3.5 w-3.5" />
+                        Cambiar
+                      </Button>
+                    </>
                   ) : (
-                    <Button variant="ghost" size="sm" onClick={() => resumeInputRef.current?.click()}>
+                    <Button variant="ghost" size="sm" onClick={() => resumeInputRef.current?.click()} disabled={uploadingFile === "resume"}>
                       <Upload className="h-3.5 w-3.5" />
-                      Subir HV
+                      {uploadingFile === "resume" ? "Subiendo..." : "Subir HV"}
                     </Button>
                   )}
-                  <input ref={resumeInputRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) handleResumeUpload(file); }} />
+                  <input ref={resumeInputRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadPersonFile(file, "resume"); }} />
                 </div>
               </div>
             </div>

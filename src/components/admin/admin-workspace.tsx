@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { BellRing, CalendarPlus, ShieldCheck, SlidersHorizontal, Trash2, UserPlus, UsersRound } from "lucide-react";
+import { ArrowDown, ArrowUp, BellRing, CalendarPlus, ShieldCheck, SlidersHorizontal, Trash2, UserPlus, UsersRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -19,12 +19,31 @@ import {
   type AdminUser,
   type AdminUserStatus,
   type ImportantAlert,
-type ImportantAlertStatus
+  type ImportantAlertStatus
 } from "@/lib/data/admin";
 import { appRoles, roleMeta, type AppRole } from "@/lib/types/roles";
 
 const usersStorageKey = "jahir-admin-users";
 const alertsStorageKey = "jahir-admin-alerts";
+const dashboardLayoutStorageKey = "jahir-dashboard-layout";
+
+type DashboardWidget = {
+  id: string;
+  title: string;
+  role: AppRole | "todos";
+  size: "pequeño" | "mediano" | "grande";
+  visible: boolean;
+};
+
+const defaultDashboardWidgets: DashboardWidget[] = [
+  { id: "metricas", title: "Métricas generales", role: "todos", size: "grande", visible: true },
+  { id: "mapa", title: "Mapa territorial", role: "todos", size: "grande", visible: true },
+  { id: "actividad", title: "Actividad reciente", role: "todos", size: "mediano", visible: true },
+  { id: "lideres", title: "Ranking de líderes", role: "todos", size: "mediano", visible: true },
+  { id: "votantes", title: "Votantes por municipio", role: "todos", size: "mediano", visible: true },
+  { id: "crecimiento", title: "Crecimiento semanal", role: "todos", size: "mediano", visible: true },
+  { id: "participacion", title: "Participación territorial", role: "todos", size: "grande", visible: true }
+];
 
 const statusVariant: Record<AdminUserStatus | ImportantAlertStatus, "emerald" | "gold" | "neutral" | "danger"> = {
   active: "emerald",
@@ -79,12 +98,15 @@ export function AdminWorkspace() {
   const [hydrated, setHydrated] = useState(false);
   const [users, setUsers] = useState<AdminUser[]>(adminUsersSeed);
   const [alerts, setAlerts] = useState<ImportantAlert[]>(importantAlertsSeed);
+  const [dashboardWidgets, setDashboardWidgets] = useState<DashboardWidget[]>(defaultDashboardWidgets);
   const [userForm, setUserForm] = useState(emptyUser());
   const [userPassword, setUserPassword] = useState("");
   const [alertForm, setAlertForm] = useState(emptyAlert());
   const [userError, setUserError] = useState("");
 
   useEffect(() => {
+    setDashboardWidgets(parseStoredList(window.localStorage.getItem(dashboardLayoutStorageKey), defaultDashboardWidgets));
+
     if (!hasSupabaseBrowserConfig()) {
       setAlerts(parseStoredList(window.localStorage.getItem(alertsStorageKey), importantAlertsSeed));
       setUsers(parseStoredList(window.localStorage.getItem(usersStorageKey), adminUsersSeed));
@@ -121,11 +143,13 @@ export function AdminWorkspace() {
 
   useEffect(() => {
     if (!hydrated) return;
+    window.localStorage.setItem(dashboardLayoutStorageKey, JSON.stringify(dashboardWidgets));
+
     if (!hasSupabaseBrowserConfig()) {
       window.localStorage.setItem(usersStorageKey, JSON.stringify(users));
       window.localStorage.setItem(alertsStorageKey, JSON.stringify(alerts));
     }
-  }, [alerts, hydrated, users]);
+  }, [alerts, dashboardWidgets, hydrated, users]);
 
   const stats = useMemo(
     () => ({
@@ -313,6 +337,23 @@ export function AdminWorkspace() {
     setAlerts((current) => current.filter((item) => item.id !== id));
   }
 
+  function updateDashboardWidget(id: string, patch: Partial<DashboardWidget>) {
+    setDashboardWidgets((current) => current.map((widget) => (widget.id === id ? { ...widget, ...patch } : widget)));
+  }
+
+  function moveDashboardWidget(id: string, direction: -1 | 1) {
+    setDashboardWidgets((current) => {
+      const index = current.findIndex((widget) => widget.id === id);
+      const nextIndex = index + direction;
+      if (index < 0 || nextIndex < 0 || nextIndex >= current.length) return current;
+
+      const next = [...current];
+      const [item] = next.splice(index, 1);
+      next.splice(nextIndex, 0, item);
+      return next;
+    });
+  }
+
   if (role !== "admin_principal") {
     return (
       <Card className="border-brand-gold/25 bg-brand-gold/8">
@@ -375,6 +416,70 @@ export function AdminWorkspace() {
               </div>
             );
           })}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <SlidersHorizontal className="h-5 w-5 text-brand-gold" />
+            <div>
+              <p className="text-xs uppercase tracking-[0.28em] text-brand-muted">Dashboard por perfil</p>
+              <h3 className="mt-1 font-display text-2xl font-semibold text-brand-ink">Orden, tamaño y visibilidad de gráficas</h3>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {dashboardWidgets.map((widget, index) => (
+            <div key={widget.id} className="grid gap-3 rounded-2xl border border-brand-line bg-white/72 p-4 lg:grid-cols-[1fr_220px_180px_auto] lg:items-center">
+              <div>
+                <p className="font-semibold text-brand-ink">{index + 1}. {widget.title}</p>
+                <p className="mt-1 text-sm text-brand-ink/62">
+                  Visible para {widget.role === "todos" ? "todos los perfiles" : getRoleLabel(widget.role)}
+                </p>
+              </div>
+              <Select value={widget.role} onChange={(event) => updateDashboardWidget(widget.id, { role: event.target.value as DashboardWidget["role"] })}>
+                <option value="todos">Todos los perfiles</option>
+                {appRoles.map((item) => (
+                  <option key={item} value={item}>
+                    {getRoleLabel(item)}
+                  </option>
+                ))}
+              </Select>
+              <Select value={widget.size} onChange={(event) => updateDashboardWidget(widget.id, { size: event.target.value as DashboardWidget["size"] })}>
+                <option value="pequeño">Pequeño</option>
+                <option value="mediano">Mediano</option>
+                <option value="grande">Grande</option>
+              </Select>
+              <div className="flex items-center justify-between gap-2 lg:justify-end">
+                <label className="flex items-center gap-2 text-xs font-semibold text-brand-ink/64">
+                  <input
+                    type="checkbox"
+                    checked={widget.visible}
+                    onChange={(event) => updateDashboardWidget(widget.id, { visible: event.target.checked })}
+                    className="h-4 w-4 accent-brand-gold"
+                  />
+                  Visible
+                </label>
+                <button
+                  type="button"
+                  onClick={() => moveDashboardWidget(widget.id, -1)}
+                  disabled={index === 0}
+                  className="rounded-xl p-2 text-brand-muted transition hover:bg-brand-cream hover:text-brand-ink disabled:pointer-events-none disabled:opacity-35"
+                >
+                  <ArrowUp className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moveDashboardWidget(widget.id, 1)}
+                  disabled={index === dashboardWidgets.length - 1}
+                  className="rounded-xl p-2 text-brand-muted transition hover:bg-brand-cream hover:text-brand-ink disabled:pointer-events-none disabled:opacity-35"
+                >
+                  <ArrowDown className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          ))}
         </CardContent>
       </Card>
 
