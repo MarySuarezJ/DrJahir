@@ -47,7 +47,7 @@ export function LoginForm() {
       }
 
       const { data: profile } = await supabase
-        .from("profiles")
+        .from("perfiles")
         .select("full_name, role")
         .eq("id", data.user.id)
         .single();

@@ -2,13 +2,13 @@
 -- Municipios de Caldas validados contra DIVIPOLA DANE MGN 2024.
 -- support_score es un valor interno editable, no un dato oficial.
 
-insert into public.departments (name, code)
+insert into public.departamentos (name, code)
 values ('Caldas', '17')
 on conflict (name) do update set code = excluded.code;
 
-insert into public.municipalities (department_id, name, code, support_score)
+insert into public.municipios (department_id, name, code, support_score)
 select d.id, item.name, item.code, item.support_score
-from public.departments d
+from public.departamentos d
 cross join (
   values
     ('Aguadas', '17013', 68.00),
@@ -44,16 +44,16 @@ on conflict (department_id, name) do update
 set code = excluded.code,
     support_score = excluded.support_score;
 
-insert into public.important_dates (title, date_type, date_month, date_day, channel, audience_scope, message_template, active)
+insert into public.fechas_importantes (title, date_type, date_month, date_day, channel, audience_scope, message_template, active)
 select 'Día del maestro', 'profession_day', 5, 15, 'email',
        '{"profession": ["docente", "profesor", "maestro"]}'::jsonb,
        'Gracias por educar y construir territorio. Feliz día del maestro, {nombre}.',
        true
-where not exists (select 1 from public.important_dates where title = 'Día del maestro');
+where not exists (select 1 from public.fechas_importantes where title = 'Día del maestro');
 
-insert into public.important_dates (title, date_type, date_month, date_day, channel, audience_scope, message_template, active)
+insert into public.fechas_importantes (title, date_type, date_month, date_day, channel, audience_scope, message_template, active)
 select 'Día del profesional de la salud', 'profession_day', 12, 3, 'whatsapp',
        '{"sector": ["salud"]}'::jsonb,
        'Reconocemos tu vocación y servicio. Gracias por cuidar a nuestra gente.',
        true
-where not exists (select 1 from public.important_dates where title = 'Día del profesional de la salud');
+where not exists (select 1 from public.fechas_importantes where title = 'Día del profesional de la salud');

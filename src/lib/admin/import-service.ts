@@ -90,13 +90,13 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
     if (cached) return cached;
 
     const existingId = await maybeSingleId(
-      client.from("departments").select("id").eq("name", name).maybeSingle(),
+      client.from("departamentos").select("id").eq("name", name).maybeSingle(),
       `No se pudo consultar el departamento ${name}`
     );
 
     if (existingId) {
       if (code) {
-        const { error } = await client.from("departments").update({ code }).eq("id", existingId);
+        const { error } = await client.from("departamentos").update({ code }).eq("id", existingId);
         if (error) throw new Error(`No se pudo actualizar el departamento ${name}: ${error.message}`);
       }
 
@@ -106,7 +106,7 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
 
     const id = await singleId(
       client
-        .from("departments")
+        .from("departamentos")
         .insert({ name, code: code || null })
         .select("id")
         .single(),
@@ -124,7 +124,7 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
 
     const existingId = await maybeSingleId(
       client
-        .from("municipalities")
+        .from("municipios")
         .select("id")
         .eq("department_id", departmentId)
         .eq("name", row.municipality)
@@ -139,7 +139,7 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
       if (row.municipalitySupportScore !== null) updatePayload.support_score = row.municipalitySupportScore;
 
       if (Object.keys(updatePayload).length > 0) {
-        const { error } = await client.from("municipalities").update(updatePayload).eq("id", existingId);
+        const { error } = await client.from("municipios").update(updatePayload).eq("id", existingId);
         if (error) throw new Error(`No se pudo actualizar el municipio ${row.municipality}: ${error.message}`);
       }
 
@@ -149,7 +149,7 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
 
     const id = await singleId(
       client
-        .from("municipalities")
+        .from("municipios")
         .insert({
           department_id: departmentId,
           name: row.municipality,
@@ -173,7 +173,7 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
 
     const existingId = await maybeSingleId(
       client
-        .from("communes")
+        .from("comunas")
         .select("id")
         .eq("municipality_id", municipalityId)
         .eq("name", name)
@@ -183,7 +183,7 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
 
     if (existingId) {
       if (code) {
-        const { error } = await client.from("communes").update({ code }).eq("id", existingId);
+        const { error } = await client.from("comunas").update({ code }).eq("id", existingId);
         if (error) throw new Error(`No se pudo actualizar la comuna/zona ${name}: ${error.message}`);
       }
 
@@ -193,7 +193,7 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
 
     const id = await singleId(
       client
-        .from("communes")
+        .from("comunas")
         .insert({ municipality_id: municipalityId, name, code: code || null })
         .select("id")
         .single(),
@@ -212,7 +212,7 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
 
     const existingId = await maybeSingleId(
       client
-        .from("neighborhoods")
+        .from("barrios")
         .select("id")
         .eq("commune_id", communeId)
         .eq("name", name)
@@ -222,7 +222,7 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
 
     if (existingId) {
       if (code) {
-        const { error } = await client.from("neighborhoods").update({ code }).eq("id", existingId);
+        const { error } = await client.from("barrios").update({ code }).eq("id", existingId);
         if (error) throw new Error(`No se pudo actualizar el barrio/vereda ${name}: ${error.message}`);
       }
 
@@ -232,7 +232,7 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
 
     const id = await singleId(
       client
-        .from("neighborhoods")
+        .from("barrios")
         .insert({ commune_id: communeId, name, code: code || null })
         .select("id")
         .single(),
@@ -251,7 +251,7 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
 
     const existingId = await maybeSingleId(
       client
-        .from("voting_centers")
+        .from("puestos_votacion")
         .select("id")
         .eq("municipality_id", municipalityId)
         .eq("name", row.votingCenter)
@@ -274,7 +274,7 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
       }
 
       const { error } = await client
-        .from("voting_centers")
+        .from("puestos_votacion")
         .update(updatePayload)
         .eq("id", existingId);
 
@@ -285,7 +285,7 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
 
     const id = await singleId(
       client
-        .from("voting_centers")
+        .from("puestos_votacion")
         .insert({
           municipality_id: municipalityId,
           commune_id: communeId,
@@ -312,7 +312,7 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
 
     const id = await singleId(
       client
-        .from("voting_tables")
+        .from("mesas_votacion")
         .upsert({ voting_center_id: votingCenterId, table_number: tableNumber }, { onConflict: "voting_center_id,table_number" })
         .select("id")
         .single(),
@@ -365,7 +365,7 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
     if (cached) return cached;
 
     const { data: person, error: personError } = await client
-      .from("people")
+      .from("personas")
       .select("id")
       .eq("document_number", documentNumber)
       .maybeSingle();
@@ -373,7 +373,7 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
     if (personError || !person?.id) return null;
 
     const { data: leader, error: leaderError } = await client
-      .from("leaders")
+      .from("lideres")
       .select("id")
       .eq("person_id", person.id)
       .maybeSingle();
@@ -394,7 +394,7 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
 
     const personId = await singleId(
       client
-        .from("people")
+        .from("personas")
         .upsert(
           {
             kind: personKindFromSupportLabel(row.supportLabel),
@@ -433,7 +433,7 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
     if (personKindFromSupportLabel(row.supportLabel) === "leader") {
       const leaderId = await singleId(
         client
-          .from("leaders")
+          .from("lideres")
           .upsert(
             {
               person_id: personId,
@@ -452,7 +452,7 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
     }
 
     for (const tag of row.tags) {
-      const { error } = await client.from("person_tags").upsert({ person_id: personId, tag }, { onConflict: "person_id,tag" });
+      const { error } = await client.from("etiquetas_persona").upsert({ person_id: personId, tag }, { onConflict: "person_id,tag" });
       if (error) throw new Error(`No se pudo cargar la etiqueta ${tag}: ${error.message}`);
       result.tagsRows += 1;
     }
@@ -469,7 +469,7 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
     if (!personId || !leaderId) continue;
 
     const { error } = await client
-      .from("people")
+      .from("personas")
       .update({ leader_id: leaderId })
       .eq("id", personId);
 
@@ -493,7 +493,7 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
     };
 
     const { data: existing, error: existingError } = await client
-      .from("important_dates")
+      .from("fechas_importantes")
       .select("id")
       .eq("title", row.title)
       .maybeSingle();
@@ -501,8 +501,8 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
     if (existingError) throw new Error(`No se pudo consultar la fecha ${row.title}: ${existingError.message}`);
 
     const write = existing?.id
-      ? client.from("important_dates").update(payload).eq("id", existing.id)
-      : client.from("important_dates").insert(payload);
+      ? client.from("fechas_importantes").update(payload).eq("id", existing.id)
+      : client.from("fechas_importantes").insert(payload);
 
     const { error } = await write;
     if (error) throw new Error(`No se pudo cargar la fecha ${row.title}: ${error.message}`);

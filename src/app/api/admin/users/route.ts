@@ -39,7 +39,7 @@ async function getAdminActor() {
   }
 
   const { data: profile, error: profileError } = await supabase
-    .from("profiles")
+    .from("perfiles")
     .select("role")
     .eq("id", user.id)
     .single();
@@ -84,7 +84,7 @@ export async function GET() {
 
   const admin = createSupabaseAdminClient();
   const { data, error } = await admin
-    .from("profiles")
+    .from("perfiles")
     .select("id,full_name,email,username,role,status,territory,can_manage_alerts,created_at")
     .order("created_at", { ascending: false });
 
@@ -120,7 +120,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: createError?.message ?? "No se pudo crear el usuario" }, { status: 400 });
   }
 
-  const { error: upsertError } = await admin.from("profiles").upsert({
+  const { error: upsertError } = await admin.from("perfiles").upsert({
     id: created.user.id,
     email,
     username: username.trim().toLowerCase(),
@@ -172,7 +172,7 @@ export async function PATCH(request: Request) {
   }
 
   const admin = createSupabaseAdminClient();
-  const { error } = await admin.from("profiles").update(updatePayload).eq("id", payload.data.id);
+  const { error } = await admin.from("perfiles").update(updatePayload).eq("id", payload.data.id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

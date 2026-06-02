@@ -131,7 +131,7 @@ async function getActor(): Promise<{ actor: Actor } | { response: NextResponse }
   }
 
   const { data: profile, error: profileError } = await supabase
-    .from("profiles")
+    .from("perfiles")
     .select("role")
     .eq("id", user.id)
     .single();
@@ -143,7 +143,7 @@ async function getActor(): Promise<{ actor: Actor } | { response: NextResponse }
   return { actor: { userId: user.id, role: profile.role as AppRole } };
 }
 
-async function fetchIdNameMap(table: "departments" | "municipalities" | "communes" | "neighborhoods", ids: string[]) {
+async function fetchIdNameMap(table: "departamentos" | "municipios" | "comunas" | "barrios", ids: string[]) {
   if (ids.length === 0) return new Map<string, string>();
 
   const admin = createSupabaseAdminClient();
@@ -158,7 +158,7 @@ async function fetchVotingCenterMap(ids: string[]) {
   if (ids.length === 0) return new Map<string, string>();
 
   const admin = createSupabaseAdminClient();
-  const { data, error } = await admin.from("voting_centers").select("id,name").in("id", ids);
+  const { data, error } = await admin.from("puestos_votacion").select("id,name").in("id", ids);
 
   if (error) throw new Error(error.message);
 
@@ -169,7 +169,7 @@ async function fetchVotingTableMap(ids: string[]) {
   if (ids.length === 0) return new Map<string, string>();
 
   const admin = createSupabaseAdminClient();
-  const { data, error } = await admin.from("voting_tables").select("id,table_number").in("id", ids);
+  const { data, error } = await admin.from("mesas_votacion").select("id,table_number").in("id", ids);
 
   if (error) throw new Error(error.message);
 
@@ -186,7 +186,7 @@ export async function GET() {
 
   const admin = createSupabaseAdminClient();
   const { data: peopleRows, error: peopleError } = await admin
-    .from("people")
+    .from("personas")
     .select(
       "id,kind,leader_id,first_name,last_name,document_number,phone,whatsapp,email,address,barrio,comuna,municipality_id,commune_id,neighborhood_id,department_id,profession,company,job_title,employment_status,voting_center_id,voting_table_id,photo_path,resume_path,notes,support_label,support_score,visibility_scope"
     )
@@ -196,18 +196,18 @@ export async function GET() {
 
   const rows = (peopleRows ?? []) as DbPerson[];
   const [departmentMap, municipalityMap, communeMap, neighborhoodMap, votingCenterMap, votingTableMap] = await Promise.all([
-    fetchIdNameMap("departments", uniqueIds(rows.map((row) => row.department_id))),
-    fetchIdNameMap("municipalities", uniqueIds(rows.map((row) => row.municipality_id))),
-    fetchIdNameMap("communes", uniqueIds(rows.map((row) => row.commune_id))),
-    fetchIdNameMap("neighborhoods", uniqueIds(rows.map((row) => row.neighborhood_id))),
+    fetchIdNameMap("departamentos", uniqueIds(rows.map((row) => row.department_id))),
+    fetchIdNameMap("municipios", uniqueIds(rows.map((row) => row.municipality_id))),
+    fetchIdNameMap("comunas", uniqueIds(rows.map((row) => row.commune_id))),
+    fetchIdNameMap("barrios", uniqueIds(rows.map((row) => row.neighborhood_id))),
     fetchVotingCenterMap(uniqueIds(rows.map((row) => row.voting_center_id))),
     fetchVotingTableMap(uniqueIds(rows.map((row) => row.voting_table_id)))
   ]);
 
-  const { data: leaderRows, error: leaderError } = await admin.from("leaders").select("id,person_id,title");
+  const { data: leaderRows, error: leaderError } = await admin.from("lideres").select("id,person_id,title");
   if (leaderError) return NextResponse.json({ error: leaderError.message }, { status: 500 });
 
-  const { data: tagRows, error: tagError } = await admin.from("person_tags").select("person_id,tag");
+  const { data: tagRows, error: tagError } = await admin.from("etiquetas_persona").select("person_id,tag");
   if (tagError) return NextResponse.json({ error: tagError.message }, { status: 500 });
 
   const peopleById = new Map(rows.map((row) => [row.id, row]));
@@ -264,7 +264,7 @@ async function ensureDepartment(name: string) {
 
   const admin = createSupabaseAdminClient();
   const { data, error } = await admin
-    .from("departments")
+    .from("departamentos")
     .upsert({ name }, { onConflict: "name" })
     .select("id")
     .single();
@@ -278,7 +278,7 @@ async function ensureMunicipality(departmentId: string | null, name: string) {
 
   const admin = createSupabaseAdminClient();
   const { data, error } = await admin
-    .from("municipalities")
+    .from("municipios")
     .upsert({ department_id: departmentId, name }, { onConflict: "department_id,name" })
     .select("id")
     .single();
@@ -292,7 +292,7 @@ async function ensureCommune(municipalityId: string | null, name: string) {
 
   const admin = createSupabaseAdminClient();
   const { data, error } = await admin
-    .from("communes")
+    .from("comunas")
     .upsert({ municipality_id: municipalityId, name }, { onConflict: "municipality_id,name" })
     .select("id")
     .single();
@@ -306,7 +306,7 @@ async function ensureNeighborhood(communeId: string | null, name: string) {
 
   const admin = createSupabaseAdminClient();
   const { data, error } = await admin
-    .from("neighborhoods")
+    .from("barrios")
     .upsert({ commune_id: communeId, name }, { onConflict: "commune_id,name" })
     .select("id")
     .single();
@@ -320,7 +320,7 @@ async function findLeaderIdByDocument(documentNumber: string) {
 
   const admin = createSupabaseAdminClient();
   const { data: person, error: personError } = await admin
-    .from("people")
+    .from("personas")
     .select("id")
     .eq("document_number", documentNumber)
     .maybeSingle();
@@ -328,7 +328,7 @@ async function findLeaderIdByDocument(documentNumber: string) {
   if (personError || !person?.id) return null;
 
   const { data: leader, error: leaderError } = await admin
-    .from("leaders")
+    .from("lideres")
     .select("id")
     .eq("person_id", person.id)
     .maybeSingle();
@@ -359,7 +359,7 @@ export async function POST(request: Request) {
     const leaderId = isLeaderLabel(person.supportLabel) ? null : await findLeaderIdByDocument(person.leaderDocumentNumber);
 
     const { data: savedPerson, error: personError } = await admin
-      .from("people")
+      .from("personas")
       .upsert(
         {
           kind: personKindFromSupportLabel(person.supportLabel),
@@ -396,7 +396,7 @@ export async function POST(request: Request) {
     if (personError || !savedPerson?.id) throw new Error(personError?.message ?? "No se pudo guardar la persona.");
 
     if (isLeaderLabel(person.supportLabel)) {
-      const { error } = await admin.from("leaders").upsert(
+      const { error } = await admin.from("lideres").upsert(
         {
           person_id: savedPerson.id,
           title: person.leaderSector ? `Líder ${person.leaderSector}` : "Líder",
@@ -407,16 +407,16 @@ export async function POST(request: Request) {
       );
       if (error) throw new Error(error.message);
     } else {
-      const { error } = await admin.from("leaders").delete().eq("person_id", savedPerson.id);
+      const { error } = await admin.from("lideres").delete().eq("person_id", savedPerson.id);
       if (error) throw new Error(error.message);
     }
 
-    const { error: clearTagsError } = await admin.from("person_tags").delete().eq("person_id", savedPerson.id);
+    const { error: clearTagsError } = await admin.from("etiquetas_persona").delete().eq("person_id", savedPerson.id);
     if (clearTagsError) throw new Error(clearTagsError.message);
 
     const tags = Array.from(new Set(person.tags.map((tag) => tag.trim()).filter(Boolean)));
     if (tags.length > 0) {
-      const { error: tagError } = await admin.from("person_tags").insert(tags.map((tag) => ({ person_id: savedPerson.id, tag })));
+      const { error: tagError } = await admin.from("etiquetas_persona").insert(tags.map((tag) => ({ person_id: savedPerson.id, tag })));
       if (tagError) throw new Error(tagError.message);
     }
 
@@ -437,7 +437,7 @@ export async function DELETE(request: Request) {
   if (!payload.success) return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
 
   const admin = createSupabaseAdminClient();
-  const { error } = await admin.from("people").delete().eq("document_number", payload.data.documentNumber);
+  const { error } = await admin.from("personas").delete().eq("document_number", payload.data.documentNumber);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

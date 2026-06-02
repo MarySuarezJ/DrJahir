@@ -30,7 +30,7 @@ async function getAdminActor(request: Request) {
   }
 
   const { data: profile, error: profileError } = await supabase
-    .from("profiles")
+    .from("perfiles")
     .select("role")
     .eq("id", user.id)
     .single();

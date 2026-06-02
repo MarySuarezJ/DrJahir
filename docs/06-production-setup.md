@@ -48,7 +48,7 @@ El primer usuario se crea manualmente porque todavía no existe un admin que pue
 3. En SQL Editor ejecuta:
 
 ```sql
-insert into public.profiles (
+insert into public.perfiles (
   id,
   email,
   username,
@@ -88,8 +88,8 @@ Carga primero:
 - Departamentos, municipios, comunas, barrios y puestos de votación.
 - Personas, líderes y asignaciones territoriales.
 - Documentos en buckets de Supabase Storage: `documents`, `photos`, `resumes`.
-- Fechas importantes y alertas en `important_dates`.
-- Accesos territoriales por usuario en `user_territory_access`.
+- Fechas importantes y alertas en `fechas_importantes`.
+- Accesos territoriales por usuario en `accesos_territoriales_usuario`.
 
 La carga territorial, de personas y de fechas importantes también se puede hacer desde el módulo `Administración` con la plantilla `/templates/carga-masiva-dr-jahir.xlsx`. La guía detallada está en `docs/07-carga-masiva-excel.md`.
 
