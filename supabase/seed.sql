@@ -1,4 +1,4 @@
--- Carga base territorial y plantillas iniciales.
+-- Carga base territorial y fechas importantes iniciales.
 -- Municipios de Caldas validados contra DIVIPOLA DANE MGN 2024.
 -- support_score es un valor interno editable, no un dato oficial.
 
@@ -43,20 +43,6 @@ where d.name = 'Caldas'
 on conflict (department_id, name) do update
 set code = excluded.code,
     support_score = excluded.support_score;
-
-insert into public.automation_templates (name, channel, trigger_type, subject, body, variables_schema, active)
-select 'Feliz cumpleaños', 'whatsapp', 'birthday', null,
-       'Hola {nombre}, desde el equipo del Dr. Jahir te deseamos un feliz cumpleaños.',
-       '{"nombre": "Nombre de la persona"}'::jsonb,
-       true
-where not exists (select 1 from public.automation_templates where name = 'Feliz cumpleaños');
-
-insert into public.automation_templates (name, channel, trigger_type, subject, body, variables_schema, active)
-select 'Día profesional', 'email', 'profession_day', 'Reconocimiento especial',
-       'Hola {nombre}, hoy reconocemos tu labor profesional y tu aporte al territorio.',
-       '{"nombre": "Nombre de la persona", "profesion": "Profesión"}'::jsonb,
-       true
-where not exists (select 1 from public.automation_templates where name = 'Día profesional');
 
 insert into public.important_dates (title, date_type, date_month, date_day, channel, audience_scope, message_template, active)
 select 'Día del maestro', 'profession_day', 5, 15, 'email',

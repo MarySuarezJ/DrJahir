@@ -2,7 +2,7 @@
 
 ## Estrategia
 
-Se propone un diseño PostgreSQL normalizado con entidades geográficas, personas, líderes, documentos, automatizaciones, formularios y auditoría.
+Se propone un diseño PostgreSQL normalizado y compacto con entidades geográficas, personas, líderes, documentos, fechas importantes, formularios y usuarios.
 
 ## Entidades principales
 
@@ -22,29 +22,19 @@ Se propone un diseño PostgreSQL normalizado con entidades geográficas, persona
 - leader_assignments
 - person_tags
 - person_documents
-- document_assets
 
-### Operación política
+### Alertas y operación
 
-- campaigns
-- campaign_segments
-- automation_templates
-- automation_rules
-- automation_runs
-- message_batches
-- message_recipients
+- important_dates
 
 ### Captación pública
 
 - public_submissions
-- public_submission_events
 
 ### Seguridad y trazabilidad
 
 - profiles
-- admin_invitations
 - user_territory_access
-- audit_logs
 
 ## Relaciones clave
 
@@ -85,29 +75,11 @@ Gestión documental con Supabase Storage.
 
 Campos: `id`, `person_id`, `document_type`, `storage_bucket`, `storage_path`, `mime_type`, `size_bytes`, `visibility_scope`, `created_at`.
 
-### automation_templates
-
-Plantillas reutilizables para cumpleaños, profesión o campañas.
-
-Campos: `id`, `name`, `channel`, `trigger_type`, `subject`, `body`, `variables_schema`, `active`.
-
 ### important_dates
 
 Fechas y alertas administrables para cumpleaños, días profesionales, días cívicos o campañas.
 
 Campos: `id`, `title`, `date_type`, `date_month`, `date_day`, `exact_date`, `channel`, `audience_scope`, `message_template`, `active`, `created_by`, `approved_by`.
-
-### admin_invitations
-
-Invitaciones y trazabilidad previa a la creación de usuarios reales.
-
-Campos: `id`, `email`, `full_name`, `role`, `status`, `invited_by`, `accepted_user_id`, `expires_at`.
-
-### audit_logs
-
-Registro de cambios sensibles.
-
-Campos: `id`, `actor_user_id`, `entity_table`, `entity_id`, `action`, `before_state`, `after_state`, `metadata`, `created_at`.
 
 ## Mermaid ER
 
@@ -120,10 +92,6 @@ erDiagram
     VOTING_CENTERS ||--o{ VOTING_TABLES : groups
     LEADERS ||--o{ PEOPLE : guides
     PEOPLE ||--o{ PERSON_DOCUMENTS : owns
-    PEOPLE ||--o{ PUBLIC_SUBMISSIONS : originates
-    PEOPLE ||--o{ MESSAGE_RECIPIENTS : receives
-    PEOPLE ||--o{ AUTOMATION_RUNS : targets
-    PROFILES ||--o{ AUDIT_LOGS : writes
     PROFILES ||--o{ USER_TERRITORY_ACCESS : receives
     PEOPLE ||--o| LEADERS : can_be_a_leader
     LEADERS ||--o{ LEADERS : parent_of
@@ -135,4 +103,4 @@ erDiagram
 - Escritura restringida por rol.
 - Lectura parcial para secretaría y abogados.
 - Lectura territorial limitada para coordinadores.
-- Auditoría obligatoria en cambios de personas, líderes, documentos y campañas.
+- Los cambios sensibles pueden auditarse en una etapa posterior si se requiere.
