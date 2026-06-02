@@ -64,6 +64,7 @@ export default function TerritoryMap() {
   const [geoData, setGeoData] = useState<GeoJSONData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selected, setSelected] = useState<{ name: string; stats: MunicipalityStats } | null>(null);
 
   useEffect(() => {
     fetch("/api/caldas-geojson")
@@ -83,7 +84,7 @@ export default function TerritoryMap() {
   }, []);
 
   return (
-    <div className="relative overflow-hidden rounded-[20px] border border-brand-line shadow-panel">
+    <div className="overflow-hidden rounded-[20px] border border-brand-line bg-white shadow-panel">
       <style>{`
         .leaflet-tooltip {
           background: rgba(255,250,240,0.96) !important;
@@ -106,95 +107,132 @@ export default function TerritoryMap() {
         .leaflet-control-zoom a:hover { background: rgba(234,212,162,0.55) !important; }
       `}</style>
 
-      {/* Legend */}
-      <div className="absolute bottom-3 left-3 z-[500] flex flex-col gap-1.5 rounded-xl border border-brand-line bg-white/90 px-3 py-2.5 text-xs text-brand-ink backdrop-blur-md">
-        <p className="mb-0.5 text-[10px] uppercase tracking-widest text-white/50">Nivel de apoyo</p>
-        {[
-          { color: "#22c97d", label: "≥ 80% — Alto" },
-          { color: "#4ade80", label: "75–79% — Bueno" },
-          { color: "#e8c55a", label: "70–74% — Medio" },
-          { color: "#fb923c", label: "65–69% — Bajo" },
-          { color: "#60a5fa", label: "< 65% — Crítico" },
-        ].map((item) => (
-          <div key={item.label} className="flex items-center gap-2">
-            <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: item.color }} />
-            <span className="text-white/75">{item.label}</span>
+      <div className="relative">
+        <div className="absolute bottom-3 left-3 z-[500] flex flex-col gap-1.5 rounded-xl border border-brand-line bg-white/90 px-3 py-2.5 text-xs text-brand-ink backdrop-blur-md">
+          <p className="mb-0.5 text-[10px] uppercase tracking-widest text-brand-muted">Nivel de apoyo</p>
+          {[
+            { color: "#22c97d", label: "≥ 80% - Alto" },
+            { color: "#4ade80", label: "75-79% - Bueno" },
+            { color: "#e8c55a", label: "70-74% - Medio" },
+            { color: "#fb923c", label: "65-69% - Bajo" },
+            { color: "#60a5fa", label: "< 65% - Crítico" },
+          ].map((item) => (
+            <div key={item.label} className="flex items-center gap-2">
+              <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: item.color }} />
+              <span className="text-brand-muted">{item.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {loading && (
+          <div className="flex h-[500px] items-center justify-center bg-brand-cream">
+            <div className="space-y-2 text-center">
+              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-brand-goldSoft border-t-transparent" />
+              <p className="text-sm text-brand-muted">Cargando mapa de Caldas...</p>
+            </div>
           </div>
-        ))}
+        )}
+
+        {error && !loading && (
+          <div className="flex h-[500px] items-center justify-center bg-brand-cream">
+            <p className="text-sm text-rose-400">Error cargando mapa: {error}</p>
+          </div>
+        )}
+
+        {!loading && !error && geoData && (
+          <MapContainer
+            center={[5.22, -75.35]}
+            zoom={8}
+            className="h-[520px] w-full"
+            zoomControl={false}
+            scrollWheelZoom={true}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+              url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+            />
+            <ZoomControl position="topright" />
+            <GeoJSON
+              key={`${geoData.features.length}-${selected?.name ?? "sin-seleccion"}`}
+              ref={geoJsonRef}
+              data={geoData as never}
+              style={(feature) => {
+                const rawName: string = (feature?.properties?.MPIO_CNMBR as string) ?? "";
+                const stats = getStats(rawName);
+                const isSelected = rawName === selected?.name;
+                return {
+                  color: isSelected ? "#273241" : getBorder(stats.supportPercent),
+                  weight: isSelected ? 3 : 1.5,
+                  fillColor: getFill(stats.supportPercent),
+                  fillOpacity: isSelected ? 0.82 : 0.60,
+                } satisfies PathOptions;
+              }}
+              onEachFeature={(feature, layer) => {
+                const rawName: string = (feature.properties?.MPIO_CNMBR as string) ?? "-";
+                const stats = getStats(rawName);
+                const pct = stats.supportPercent;
+                const cls = pct >= 75 ? "support-high" : pct >= 68 ? "support-mid" : "support-low";
+
+                layer.bindTooltip(
+                  `<div style="min-width:180px">
+                  <strong>${rawName}</strong>
+                  Votantes: <b>${stats.voters.toLocaleString("es-CO")}</b><br/>
+                  Líderes: <b>${stats.leaders}</b><br/>
+                  Apoyo: <span class="${cls}">${pct}%</span><br/>
+                  <span style="color:#7b8493">Clic para ver detalle</span>
+                </div>`,
+                  { sticky: true, direction: "top", opacity: 1 }
+                );
+
+                layer.on({
+                  click: () => setSelected({ name: rawName, stats }),
+                  mouseover: (e) => {
+                    const t = e.target as { setStyle?: (o: PathOptions) => void };
+                    t.setStyle?.({ weight: 3, fillOpacity: 0.85 });
+                  },
+                  mouseout: () => {
+                    geoJsonRef.current?.resetStyle(layer);
+                  },
+                });
+              }}
+            />
+          </MapContainer>
+        )}
       </div>
 
-      {loading && (
-        <div className="flex h-[500px] items-center justify-center bg-brand-cream">
-          <div className="space-y-2 text-center">
-            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-brand-goldSoft border-t-transparent" />
-            <p className="text-sm text-white/50">Cargando mapa de Caldas…</p>
+      <div className="border-t border-brand-line bg-brand-cream/70 p-4 sm:p-5">
+        {selected ? (
+          <div className="space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.28em] text-brand-muted">Municipio seleccionado</p>
+                <h3 className="mt-1 font-display text-2xl font-semibold text-brand-ink">{selected.name}</h3>
+              </div>
+              <span className="w-fit rounded-full border border-brand-line bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700">
+                {selected.stats.supportPercent}% apoyo
+              </span>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {[
+                { label: "Votantes", value: selected.stats.voters.toLocaleString("es-CO") },
+                { label: "Líderes", value: selected.stats.leaders.toLocaleString("es-CO") },
+                { label: "Empleados", value: selected.stats.employed.toLocaleString("es-CO") },
+                { label: "Desempleados", value: selected.stats.unemployed.toLocaleString("es-CO") },
+              ].map((metric) => (
+                <div key={metric.label} className="rounded-2xl border border-brand-line bg-white px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.18em] text-brand-muted">{metric.label}</p>
+                  <p className="mt-1 text-xl font-semibold text-brand-ink">{metric.value}</p>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
-
-      {error && !loading && (
-        <div className="flex h-[500px] items-center justify-center bg-brand-cream">
-          <p className="text-sm text-rose-400">Error cargando mapa: {error}</p>
-        </div>
-      )}
-
-      {!loading && !error && geoData && (
-        <MapContainer
-          center={[5.22, -75.35]}
-          zoom={8}
-          className="h-[520px] w-full"
-          zoomControl={false}
-          scrollWheelZoom={true}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-          />
-          <ZoomControl position="topright" />
-          <GeoJSON
-            key={geoData.features.length}
-            ref={geoJsonRef}
-            data={geoData as never}
-            style={(feature) => {
-              const rawName: string = (feature?.properties?.MPIO_CNMBR as string) ?? "";
-              const stats = getStats(rawName);
-              return {
-                color: getBorder(stats.supportPercent),
-                weight: 1.5,
-                fillColor: getFill(stats.supportPercent),
-                fillOpacity: 0.60,
-              } satisfies PathOptions;
-            }}
-            onEachFeature={(feature, layer) => {
-              const rawName: string = (feature.properties?.MPIO_CNMBR as string) ?? "—";
-              const stats = getStats(rawName);
-              const pct = stats.supportPercent;
-              const cls = pct >= 75 ? "support-high" : pct >= 68 ? "support-mid" : "support-low";
-
-              layer.bindTooltip(
-                `<div style="min-width:200px">
-                  <strong>${rawName}</strong>
-                  🗳️ Votantes: <b>${stats.voters.toLocaleString("es-CO")}</b><br/>
-                  👥 Líderes: <b>${stats.leaders}</b><br/>
-                  💼 Empleados: <b>${stats.employed}</b> · Desempl.: <b>${stats.unemployed}</b><br/>
-                  📊 Apoyo: <span class="${cls}">${pct}%</span>
-                </div>`,
-                { sticky: true, direction: "top", opacity: 1 }
-              );
-
-              layer.on({
-                mouseover: (e) => {
-                  const t = e.target as { setStyle?: (o: PathOptions) => void };
-                  t.setStyle?.({ weight: 3, fillOpacity: 0.85 });
-                },
-                mouseout: () => {
-                  geoJsonRef.current?.resetStyle(layer);
-                },
-              });
-            }}
-          />
-        </MapContainer>
-      )}
+        ) : (
+          <div className="rounded-2xl border border-dashed border-brand-line bg-white px-4 py-5 text-sm text-brand-muted">
+            Selecciona un municipio en el mapa para ver sus indicadores aquí.
+          </div>
+        )}
+      </div>
     </div>
   );
 }
