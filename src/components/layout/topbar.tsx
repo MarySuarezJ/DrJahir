@@ -1,9 +1,8 @@
 "use client";
 
-import { Menu, Search, LogOut } from "lucide-react";
+import { Menu, LogOut } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { roleMeta } from "@/lib/types/roles";
 import { useSession } from "@/components/providers/session-provider";
 
@@ -28,12 +27,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
           </div>
         </div>
 
-        <div className="flex flex-1 flex-col gap-3 xl:flex-row xl:items-center xl:justify-end">
-          <div className="relative xl:w-[340px]">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-muted" />
-            <Input placeholder="Buscar personas, líderes o territorios" className="pl-11" />
-          </div>
-
+        <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center xl:justify-end">
           <Badge variant="gold">{currentRole?.shortLabel ?? role}</Badge>
 
           <Button variant="ghost" onClick={logout} className="justify-center">

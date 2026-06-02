@@ -1,199 +1,215 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { FileUp, Trash2, Download, FileText, ImageIcon, FileBadge } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Download, Eye, FileBadge, FileText, ImageIcon, Search, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 
-type UploadedFile = {
+type DocumentRecord = {
   id: string;
+  personName: string;
+  documentNumber: string;
+  profession: string;
+  municipality: string;
+  type: "pdf" | "image" | "doc";
   name: string;
   size: number;
-  type: string;
   uploadedAt: string;
-  bucket: string;
+  url: string;
 };
 
-const seedFiles: UploadedFile[] = [
-  { id: "f1", name: "hoja_vida_camila_lopez.pdf",   size: 342000, type: "pdf",   uploadedAt: "Hace 12 min", bucket: "personas" },
-  { id: "f2", name: "foto_perfil_laura_garcia.jpg",  size: 187000, type: "image", uploadedAt: "Hace 25 min", bucket: "personas" },
-  { id: "f3", name: "soporte_politico_jhon.pdf",     size: 215000, type: "pdf",   uploadedAt: "Hace 1 h",   bucket: "lideres"  },
+const seedDocuments: DocumentRecord[] = [
+  {
+    id: "doc-1",
+    personName: "Camila López",
+    documentNumber: "1002003001",
+    profession: "Psicóloga",
+    municipality: "Manizales",
+    type: "pdf",
+    name: "hoja_vida_camila_lopez.pdf",
+    size: 342000,
+    uploadedAt: "Hace 12 min",
+    url: "/templates/carga-masiva-dr-jahir.xlsx"
+  },
+  {
+    id: "doc-2",
+    personName: "Laura García",
+    documentNumber: "1002458891",
+    profession: "Médica",
+    municipality: "Manizales",
+    type: "image",
+    name: "foto_perfil_laura_garcia.jpg",
+    size: 187000,
+    uploadedAt: "Hace 25 min",
+    url: "/Logo.png"
+  },
+  {
+    id: "doc-3",
+    personName: "Jhon Ramírez",
+    documentNumber: "1006688123",
+    profession: "Líder comunitario",
+    municipality: "Riosucio",
+    type: "pdf",
+    name: "soporte_politico_jhon.pdf",
+    size: 215000,
+    uploadedAt: "Hace 1 h",
+    url: "/templates/carga-masiva-dr-jahir.xlsx"
+  }
 ];
-
-function fileIcon(type: string) {
-  if (type === "image") return <ImageIcon className="h-5 w-5" />;
-  if (type === "pdf")   return <FileBadge className="h-5 w-5" />;
-  return <FileText className="h-5 w-5" />;
-}
 
 function formatSize(bytes: number) {
   return bytes >= 1_000_000 ? `${(bytes / 1_000_000).toFixed(1)} MB` : `${Math.round(bytes / 1000)} KB`;
 }
 
-function detectBucket(name: string): string {
-  const lower = name.toLowerCase();
-  if (lower.includes("hoja") || lower.includes("foto")) return "personas";
-  if (lower.includes("lider") || lower.includes("soporte")) return "lideres";
-  if (lower.includes("legal") || lower.includes("contrato")) return "legal";
-  return "campanas";
+function iconForType(type: DocumentRecord["type"]) {
+  if (type === "image") return <ImageIcon className="h-4 w-4" />;
+  if (type === "pdf") return <FileBadge className="h-4 w-4" />;
+  return <FileText className="h-4 w-4" />;
 }
 
-function detectType(name: string): string {
-  const ext = name.split(".").pop()?.toLowerCase() ?? "";
-  if (["jpg","jpeg","png","webp"].includes(ext)) return "image";
-  if (ext === "pdf") return "pdf";
-  return "doc";
-}
+function DocumentViewer({ document, onClose }: { document: DocumentRecord; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-brand-ink/76 p-4 backdrop-blur-sm">
+      <div className="flex h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-[24px] border border-brand-line bg-white shadow-2xl">
+        <div className="flex shrink-0 items-center justify-between gap-4 border-b border-brand-line px-6 py-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.24em] text-brand-muted">Vista previa</p>
+            <h3 className="mt-1 font-display text-xl font-semibold text-brand-ink">{document.name}</h3>
+            <p className="mt-0.5 text-sm text-brand-ink/62">{document.personName} · {document.profession}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <a
+              href={document.url}
+              download
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-brand-line bg-brand-cream px-4 text-sm font-semibold text-brand-ink transition hover:bg-brand-beige"
+            >
+              <Download className="h-4 w-4" />
+              Descargar
+            </a>
+            <button onClick={onClose} className="rounded-xl border border-brand-line bg-white p-2 text-brand-muted transition hover:bg-brand-cream hover:text-brand-ink">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
 
-const BUCKETS = ["personas", "lideres", "campanas", "legal"];
+        <div className="min-h-0 flex-1 bg-brand-cream/60">
+          {document.type === "image" ? (
+            <div className="flex h-full items-center justify-center overflow-auto p-6">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={document.url} alt={document.name} className="max-h-full max-w-full rounded-2xl object-contain shadow-panel" />
+            </div>
+          ) : (
+            <iframe src={document.url} title={document.name} className="h-full w-full border-0" />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function DocumentsPage() {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [files, setFiles] = useState<UploadedFile[]>(seedFiles);
-  const [dragging, setDragging] = useState(false);
-  const [bucketFilter, setBucketFilter] = useState("all");
+  const [query, setQuery] = useState("");
+  const [profession, setProfession] = useState("all");
+  const [type, setType] = useState("all");
+  const [selectedDocument, setSelectedDocument] = useState<DocumentRecord | null>(null);
 
-  function addFiles(raw: FileList | null) {
-    if (!raw) return;
-    const next: UploadedFile[] = Array.from(raw).map((f) => ({
-      id: `f-${Date.now()}-${Math.random()}`,
-      name: f.name,
-      size: f.size,
-      type: detectType(f.name),
-      uploadedAt: "Ahora",
-      bucket: detectBucket(f.name),
-    }));
-    setFiles((prev) => [...next, ...prev]);
-  }
+  const professions = useMemo(() => Array.from(new Set(seedDocuments.map((document) => document.profession))), []);
+  const filtered = useMemo(() => {
+    const clean = query.trim().toLowerCase();
 
-  function handleDrop(e: React.DragEvent) {
-    e.preventDefault();
-    setDragging(false);
-    addFiles(e.dataTransfer.files);
-  }
-
-  const filtered = bucketFilter === "all" ? files : files.filter((f) => f.bucket === bucketFilter);
+    return seedDocuments.filter((document) => {
+      const haystack = `${document.personName} ${document.documentNumber} ${document.profession} ${document.municipality} ${document.name}`.toLowerCase();
+      const matchesQuery = !clean || haystack.includes(clean);
+      const matchesProfession = profession === "all" || document.profession === profession;
+      const matchesType = type === "all" || document.type === type;
+      return matchesQuery && matchesProfession && matchesType;
+    });
+  }, [profession, query, type]);
 
   return (
     <div className="space-y-6">
       <div>
-        <Badge variant="gold">Gestión documental</Badge>
-        <h2 className="mt-3 font-display text-4xl font-semibold text-white">Hojas de vida, PDFs y fotos</h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-white/75 sm:text-base">
-          Carga, organiza y accede a documentos por persona o líder. Preparado para Supabase Storage.
+        <Badge variant="gold">Archivo documental</Badge>
+        <h2 className="mt-3 font-display text-4xl font-semibold text-brand-ink">Hojas de vida y soportes</h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-brand-ink/72 sm:text-base">
+          Consulta documentos por persona, profesión, municipio y tipo de archivo antes de descargarlos.
         </p>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        {/* Zona de carga */}
-        <Card className="border-white/20 bg-white/[0.06]">
-          <CardHeader>
-            <p className="text-xs uppercase tracking-[0.28em] text-white/65">Carga de documentos</p>
-            <h3 className="mt-2 font-display text-2xl font-semibold text-white">Arrastrar y soltar</h3>
-          </CardHeader>
-          <CardContent>
-            <div
-              className={`flex min-h-[220px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 text-center transition ${
-                dragging ? "border-brand-gold bg-brand-gold/10" : "border-white/20 bg-white/[0.04] hover:border-white/35 hover:bg-white/[0.07]"
-              }`}
-              onClick={() => inputRef.current?.click()}
-              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-              onDragLeave={() => setDragging(false)}
-              onDrop={handleDrop}
-            >
-              <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-gold/15 text-brand-goldSoft">
-                <FileUp className="h-6 w-6" />
-              </span>
-              <p className="mt-4 font-semibold text-white">Suelta archivos aquí o haz clic</p>
-              <p className="mt-1 text-sm text-white/65">PDF, JPG, PNG, DOCX según la configuración de Supabase Storage</p>
-              <Button variant="gold" size="sm" className="mt-5" onClick={(e) => { e.stopPropagation(); inputRef.current?.click(); }}>
-                Seleccionar archivos
-              </Button>
-            </div>
-            <input ref={inputRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" className="hidden" onChange={(e) => addFiles(e.target.files)} />
-
-            <div className="mt-5 grid grid-cols-4 gap-3 text-sm">
-              {[
-                ["Total", String(files.length)],
-                ["PDFs", String(files.filter((f) => f.type === "pdf").length)],
-                ["Imágenes", String(files.filter((f) => f.type === "image").length)],
-                ["Otros", String(files.filter((f) => f.type === "doc").length)],
-              ].map(([label, val]) => (
-                <div key={label} className="rounded-xl border border-white/15 bg-white/[0.06] px-3 py-2.5 text-center">
-                  <p className="text-[10px] uppercase tracking-wider text-white/50">{label}</p>
-                  <p className="mt-0.5 text-xl font-bold text-white">{val}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Buckets */}
-        <Card className="border-white/20 bg-white/[0.06]">
-          <CardHeader>
-            <p className="text-xs uppercase tracking-[0.28em] text-white/65">Filtrar por carpeta</p>
-            <h3 className="mt-1 font-display text-xl font-semibold text-white">Buckets de almacenamiento</h3>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <button
-              onClick={() => setBucketFilter("all")}
-              className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 text-sm transition ${bucketFilter === "all" ? "border-brand-gold/30 bg-brand-gold/10 text-white" : "border-white/15 bg-white/[0.04] text-white/72 hover:bg-white/[0.08]"}`}
-            >
-              <span className="font-medium">Todos los archivos</span>
-              <Badge variant="neutral">{files.length}</Badge>
-            </button>
-            {BUCKETS.map((b) => (
-              <button
-                key={b}
-                onClick={() => setBucketFilter(b)}
-                className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 text-sm transition ${bucketFilter === b ? "border-brand-gold/30 bg-brand-gold/10 text-white" : "border-white/15 bg-white/[0.04] text-white/72 hover:bg-white/[0.08]"}`}
-              >
-                <span className="capitalize font-medium">{b}</span>
-                <Badge variant="neutral">{files.filter((f) => f.bucket === b).length}</Badge>
-              </button>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Lista de archivos */}
-      <Card className="border-white/20 bg-white/[0.06]">
+      <Card>
         <CardHeader>
-          <p className="text-xs uppercase tracking-[0.28em] text-white/65">Archivos cargados</p>
-          <h3 className="mt-1 font-display text-2xl font-semibold text-white">{filtered.length} archivo{filtered.length !== 1 ? "s" : ""}</h3>
+          <p className="text-xs uppercase tracking-[0.28em] text-brand-muted">Filtros</p>
+          <h3 className="mt-1 font-display text-2xl font-semibold text-brand-ink">Buscar hojas de vida</h3>
         </CardHeader>
-        <CardContent>
-          {filtered.length === 0 ? (
-            <p className="py-8 text-center text-sm text-white/45">No hay archivos en esta carpeta todavía.</p>
-          ) : (
-            <div className="space-y-2">
-              {filtered.map((f) => (
-                <div key={f.id} className="flex items-center gap-4 rounded-2xl border border-white/15 bg-white/[0.04] px-4 py-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/[0.08] text-white/70">
-                    {fileIcon(f.type)}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-white">{f.name}</p>
-                    <p className="mt-0.5 text-xs text-white/55">{formatSize(f.size)} · {f.bucket} · {f.uploadedAt}</p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <Badge variant={f.type === "pdf" ? "gold" : f.type === "image" ? "emerald" : "neutral"}>
-                      {f.type.toUpperCase()}
-                    </Badge>
-                    <button className="rounded-lg p-1.5 text-white/40 hover:bg-white/10 hover:text-white transition">
-                      <Download className="h-4 w-4" />
-                    </button>
-                    <button onClick={() => setFiles((prev) => prev.filter((x) => x.id !== f.id))} className="rounded-lg p-1.5 text-white/40 hover:bg-rose-500/10 hover:text-rose-400 transition">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+        <CardContent className="grid gap-3 lg:grid-cols-[1fr_260px_180px]">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-muted" />
+            <Input value={query} onChange={(event) => setQuery(event.target.value)} className="pl-11" placeholder="Buscar por nombre, cédula, municipio o archivo" />
+          </div>
+          <Select value={profession} onChange={(event) => setProfession(event.target.value)}>
+            <option value="all">Todas las profesiones</option>
+            {professions.map((item) => (
+              <option key={item} value={item}>{item}</option>
+            ))}
+          </Select>
+          <Select value={type} onChange={(event) => setType(event.target.value)}>
+            <option value="all">Todos los tipos</option>
+            <option value="pdf">PDF</option>
+            <option value="image">Imagen</option>
+            <option value="doc">Documento</option>
+          </Select>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <p className="text-xs uppercase tracking-[0.28em] text-brand-muted">Resultados</p>
+          <h3 className="mt-1 font-display text-2xl font-semibold text-brand-ink">{filtered.length} documento{filtered.length !== 1 ? "s" : ""}</h3>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {filtered.map((document) => (
+            <div key={document.id} className="grid gap-4 rounded-2xl border border-brand-line bg-white/74 p-4 lg:grid-cols-[1fr_0.9fr_auto] lg:items-center">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-brand-line bg-brand-cream text-brand-ink">
+                  {iconForType(document.type)}
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-brand-ink">{document.name}</p>
+                  <p className="mt-0.5 text-xs text-brand-ink/58">{formatSize(document.size)} · {document.uploadedAt}</p>
+                </div>
+              </div>
+
+              <div>
+                <p className="font-semibold text-brand-ink">{document.personName}</p>
+                <p className="mt-0.5 text-sm text-brand-ink/62">CC {document.documentNumber} · {document.profession} · {document.municipality}</p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                <Badge variant={document.type === "pdf" ? "gold" : document.type === "image" ? "emerald" : "neutral"}>
+                  {document.type.toUpperCase()}
+                </Badge>
+                <Button variant="primary" size="sm" onClick={() => setSelectedDocument(document)}>
+                  <Eye className="h-4 w-4" />
+                  Ver
+                </Button>
+                <a
+                  href={document.url}
+                  download
+                  className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-brand-line bg-white px-4 text-sm font-semibold text-brand-ink transition hover:bg-brand-cream"
+                >
+                  <Download className="h-4 w-4" />
+                  Descargar
+                </a>
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {selectedDocument && <DocumentViewer document={selectedDocument} onClose={() => setSelectedDocument(null)} />}
     </div>
   );
 }

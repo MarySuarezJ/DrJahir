@@ -1,6 +1,5 @@
 import type { NavigationItem } from "@/lib/types/domain";
 import {
-  BarChart3,
   FileText,
   GitBranch,
   LayoutDashboard,
@@ -72,16 +71,9 @@ export const navigationItems: Array<NavigationItem & { icon: typeof LayoutDashbo
   {
     label: "Mensajería",
     href: "/dashboard/messages",
-    description: "WhatsApp, correo y SMS futuro.",
+    description: "WhatsApp, correo y SMS.",
     roles: ["admin_principal", "secretaria"],
     icon: MessageSquareMore
-  },
-  {
-    label: "Analítica",
-    href: "/dashboard/analytics",
-    description: "Lectura ejecutiva y proyecciones.",
-    roles: ["admin_principal", "doctor", "secretaria", "coordinador_territorial"],
-    icon: BarChart3
   }
 ];
 

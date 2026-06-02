@@ -33,9 +33,29 @@ export function LoginForm() {
     const userInput = username.trim().toLowerCase();
 
     if (hasSupabaseBrowserConfig()) {
+      const resolvedEmail = userInput.includes("@")
+        ? userInput
+        : await fetch("/api/auth/resolve-login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ login: userInput })
+          })
+            .then(async (response) => {
+              const data = (await response.json()) as { email?: string; error?: string };
+              if (!response.ok || !data.email) throw new Error(data.error ?? "Usuario o contraseña incorrectos.");
+              return data.email;
+            })
+            .catch(() => "");
+
+      if (!resolvedEmail) {
+        setError("Usuario o contraseña incorrectos.");
+        setLoading(false);
+        return;
+      }
+
       const supabase = createSupabaseBrowserClient();
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: userInput,
+        email: resolvedEmail,
         password
       });
 

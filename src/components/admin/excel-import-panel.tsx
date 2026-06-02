@@ -103,7 +103,7 @@ export function ExcelImportPanel({ role }: { role: AppRole }) {
       setPreview({ payload, parsed });
 
       if (parsed.totalRows === 0) {
-        setStatus({ type: "error", message: "No encontré filas para importar. Revisa que existan las hojas Territorio, Personas o Fechas importantes." });
+        setStatus({ type: "error", message: "No encontré filas para importar. Revisa que existan las hojas Territorio o Personas." });
         return;
       }
 
@@ -157,7 +157,7 @@ export function ExcelImportPanel({ role }: { role: AppRole }) {
             <FileSpreadsheet className="h-5 w-5 text-brand-emerald" />
             <div>
               <p className="text-xs uppercase tracking-[0.28em] text-brand-muted">Carga masiva</p>
-              <h3 className="mt-1 font-display text-2xl font-semibold text-brand-ink">Excel para territorio, personas y alertas</h3>
+              <h3 className="mt-1 font-display text-2xl font-semibold text-brand-ink">Excel para territorio y personas</h3>
             </div>
           </div>
           <a
@@ -187,10 +187,9 @@ export function ExcelImportPanel({ role }: { role: AppRole }) {
             <span className="mt-1 text-xs leading-5 text-brand-ink/62">Solo administradores principales pueden cargar datos a la base.</span>
           </button>
 
-          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
             <SummaryPill label="Territorio" value={preview?.parsed.territoryRows.length ?? 0} />
             <SummaryPill label="Personas" value={preview?.parsed.peopleRows.length ?? 0} />
-            <SummaryPill label="Fechas" value={preview?.parsed.importantDateRows.length ?? 0} />
           </div>
         </div>
 

@@ -96,37 +96,7 @@ Ejemplo de jerarquía:
 
 ### Fechas importantes
 
-Sirve para cargar o actualizar alertas administrables.
-
-Campos obligatorios:
-
-- `titulo`
-- `mensaje`
-- `fecha_exacta` o la combinación `mes` + `dia`
-
-Columnas principales:
-
-- `titulo`
-- `tipo_fecha`
-- `mes`
-- `dia`
-- `fecha_exacta`
-- `canal`
-- `audiencia_json`
-- `mensaje`
-- `activo`
-
-Valores aceptados:
-
-- `tipo_fecha`: `birthday`, `profession_day`, `civic_day`, `campaign_day`, `custom`
-- `canal`: `whatsapp`, `email`, `sms`
-- `activo`: `si`, `no`, `true`, `false`
-
-Ejemplo de `audiencia_json`:
-
-```json
-{"profession":["docente","profesor"],"municipality":["Manizales"]}
-```
+Las fechas importantes ya no se cargan por Excel. Se crean y editan desde **Administración > Alertas > Días importantes**, porque hacen parte de las automatizaciones y mensajes.
 
 ## Flujo de uso
 
@@ -152,5 +122,5 @@ La clave `SUPABASE_SERVICE_ROLE_KEY` debe quedar como secreto privado, nunca exp
 
 - Municipios, comunas, barrios y mesas se cargan de forma idempotente.
 - Las personas se actualizan por `cedula`.
-- Las fechas importantes se actualizan por `titulo`.
+- Las fechas importantes se administran desde el panel, no desde la plantilla.
 - Si hay errores de validación, el sistema no escribe en Supabase hasta corregirlos.

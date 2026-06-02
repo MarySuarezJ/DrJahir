@@ -32,13 +32,12 @@ await writeExcelFile(
       columns: columns([72]),
       data: toSheetData([
         ["Plantilla de carga masiva - Dr. Jahir"],
-        ["Llena las hojas Territorio, Personas y Fechas importantes. Puedes dejar hojas vacias si no las necesitas."],
+        ["Llena las hojas Territorio y Personas. Puedes dejar hojas vacias si no las necesitas."],
         ["No cambies los nombres de las hojas ni los encabezados."],
         ["Campos obligatorios en Territorio: municipio."],
         ["Campos obligatorios en Personas: nombres, apellidos, cedula, municipio. Para cumpleanos usa fecha_nacimiento."],
-        ["Campos obligatorios en Fechas importantes: titulo, mensaje, y fecha exacta o mes/dia."],
-        ["Para audiencia_json usa JSON valido, por ejemplo: {\"profession\":[\"docente\"]}."],
-        ["Al subir el archivo desde Administracion, el sistema actualiza registros existentes por cedula, municipio o titulo."]
+        ["Las fechas importantes se crean desde el modulo Administracion, no desde esta plantilla."],
+        ["Al subir el archivo desde Administracion, el sistema actualiza registros existentes por cedula o municipio."]
       ])
     },
     {
@@ -182,36 +181,6 @@ await writeExcelFile(
           "comunidad, rural",
           "operational",
           ""
-        ]
-      ])
-    },
-    {
-      sheet: "Fechas importantes",
-      stickyRowsCount: 1,
-      columns: columns([28, 18, 10, 10, 16, 14, 38, 56, 12]),
-      data: toSheetData([
-        ["titulo", "tipo_fecha", "mes", "dia", "fecha_exacta", "canal", "audiencia_json", "mensaje", "activo"],
-        [
-          "Dia del maestro",
-          "profession_day",
-          5,
-          15,
-          "",
-          "email",
-          "{\"profession\":[\"docente\",\"profesor\",\"maestro\"]}",
-          "Gracias por educar y construir territorio. Feliz dia del maestro, {nombre}.",
-          "si"
-        ],
-        [
-          "Jornada especial Manizales",
-          "campaign_day",
-          "",
-          "",
-          "2026-08-10",
-          "whatsapp",
-          "{\"municipality\":[\"Manizales\"]}",
-          "Hola {nombre}, te esperamos en la jornada especial de Manizales.",
-          "si"
         ]
       ])
     }

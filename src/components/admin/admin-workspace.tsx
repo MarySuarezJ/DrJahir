@@ -85,9 +85,8 @@ export function AdminWorkspace() {
   const [userError, setUserError] = useState("");
 
   useEffect(() => {
-    setAlerts(parseStoredList(window.localStorage.getItem(alertsStorageKey), importantAlertsSeed));
-
     if (!hasSupabaseBrowserConfig()) {
+      setAlerts(parseStoredList(window.localStorage.getItem(alertsStorageKey), importantAlertsSeed));
       setUsers(parseStoredList(window.localStorage.getItem(usersStorageKey), adminUsersSeed));
       setHydrated(true);
       return;
@@ -105,6 +104,15 @@ export function AdminWorkspace() {
         }
 
         setUsers(data.users);
+
+        const alertsResponse = await fetch("/api/admin/important-dates");
+        const alertsData = (await alertsResponse.json()) as { alerts?: ImportantAlert[]; error?: string };
+
+        if (alertsResponse.ok && Array.isArray(alertsData.alerts)) {
+          setAlerts(alertsData.alerts);
+        } else {
+          setAlerts(importantAlertsSeed);
+        }
       } finally {
         setHydrated(true);
       }
@@ -115,8 +123,8 @@ export function AdminWorkspace() {
     if (!hydrated) return;
     if (!hasSupabaseBrowserConfig()) {
       window.localStorage.setItem(usersStorageKey, JSON.stringify(users));
+      window.localStorage.setItem(alertsStorageKey, JSON.stringify(alerts));
     }
-    window.localStorage.setItem(alertsStorageKey, JSON.stringify(alerts));
   }, [alerts, hydrated, users]);
 
   const stats = useMemo(
@@ -232,24 +240,77 @@ export function AdminWorkspace() {
     setUsers((current) => current.filter((user) => user.id !== id));
   }
 
-  function createAlert() {
+  async function createAlert() {
     if (!alertForm.title.trim() || !alertForm.message.trim()) return;
 
-    setAlerts((current) => [
-      {
-        ...alertForm,
-        id: `alert-${globalThis.crypto.randomUUID()}`,
-        date: alertForm.date || "Fecha por definir",
-        audience: alertForm.audience.trim() || "Todos los registrados",
-        owner: displayName
-      },
-      ...current
-    ]);
+    const payload = {
+      ...alertForm,
+      date: alertForm.date || "Fecha por definir",
+      audience: alertForm.audience.trim() || "Todos los registrados"
+    };
+
+    if (hasSupabaseBrowserConfig()) {
+      const response = await fetch("/api/admin/important-dates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = (await response.json()) as { alert?: ImportantAlert; error?: string };
+
+      if (!response.ok || !data.alert) {
+        setUserError(data.error ?? "No se pudo guardar la fecha importante.");
+        return;
+      }
+
+      setAlerts((current) => [data.alert as ImportantAlert, ...current]);
+      setAlertForm(emptyAlert());
+      return;
+    }
+
+    setAlerts((current) => [{ ...payload, id: `alert-${globalThis.crypto.randomUUID()}`, owner: displayName }, ...current]);
     setAlertForm(emptyAlert());
   }
 
-  function updateAlert(id: string, patch: Partial<ImportantAlert>) {
+  async function updateAlert(id: string, patch: Partial<ImportantAlert>) {
+    const currentAlert = alerts.find((alert) => alert.id === id);
+    if (!currentAlert) return;
+
+    if (hasSupabaseBrowserConfig()) {
+      const response = await fetch("/api/admin/important-dates", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...currentAlert, ...patch })
+      });
+      const data = (await response.json()) as { alert?: ImportantAlert; error?: string };
+
+      if (!response.ok || !data.alert) {
+        setUserError(data.error ?? "No se pudo actualizar la fecha importante.");
+        return;
+      }
+
+      setAlerts((current) => current.map((alert) => (alert.id === id ? data.alert as ImportantAlert : alert)));
+      return;
+    }
+
     setAlerts((current) => current.map((alert) => (alert.id === id ? { ...alert, ...patch } : alert)));
+  }
+
+  async function deleteAlert(id: string) {
+    if (hasSupabaseBrowserConfig()) {
+      const response = await fetch("/api/admin/important-dates", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id })
+      });
+      const data = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        setUserError(data.error ?? "No se pudo eliminar la fecha importante.");
+        return;
+      }
+    }
+
+    setAlerts((current) => current.filter((item) => item.id !== id));
   }
 
   if (role !== "admin_principal") {
@@ -394,7 +455,7 @@ export function AdminWorkspace() {
               <option value="paused">Pausado</option>
             </Select>
             <Textarea value={alertForm.message} onChange={(event) => setAlertForm({ ...alertForm, message: event.target.value })} placeholder="Mensaje. Puedes usar {nombre} para personalizar." />
-            <Button variant="emerald" onClick={createAlert}>
+            <Button variant="emerald" onClick={() => void createAlert()}>
               <CalendarPlus className="h-4 w-4" />
               Guardar alerta
             </Button>
@@ -481,7 +542,7 @@ export function AdminWorkspace() {
                 </div>
               </div>
               <div className="mt-4 flex items-center gap-2">
-                <Select value={alert.status} onChange={(event) => updateAlert(alert.id, { status: event.target.value as ImportantAlertStatus })}>
+                <Select value={alert.status} onChange={(event) => void updateAlert(alert.id, { status: event.target.value as ImportantAlertStatus })}>
                   <option value="draft">Borrador</option>
                   <option value="scheduled">Programado</option>
                   <option value="active">Activo</option>
@@ -489,7 +550,7 @@ export function AdminWorkspace() {
                 </Select>
                 <button
                   type="button"
-                  onClick={() => setAlerts((current) => current.filter((item) => item.id !== alert.id))}
+                  onClick={() => void deleteAlert(alert.id)}
                   className="rounded-xl p-3 text-brand-muted transition hover:bg-rose-50 hover:text-rose-700"
                 >
                   <Trash2 className="h-4 w-4" />

@@ -4,8 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo } from "react";
 import { BrandMark } from "@/components/brand/brand-mark";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import { getNavigationForRole } from "@/lib/permissions";
 import { useSession } from "@/components/providers/session-provider";
 import { cn } from "@/lib/utils";
@@ -29,15 +27,6 @@ export function Sidebar({ open = true, onClose }: SidebarProps) {
     >
       <div className="space-y-6">
         <BrandMark compact />
-
-        <Card className="border-brand-line bg-brand-cream/80 p-4">
-          <div className="space-y-3">
-            <Badge variant="gold">Operación territorial</Badge>
-            <p className="text-sm leading-6 text-brand-ink/72">
-              Seguimiento de líderes, personas movilizadas, territorios, alertas y resultados por perfil.
-            </p>
-          </div>
-        </Card>
 
         <nav className="space-y-2">
           {navigation.map((item) => {
