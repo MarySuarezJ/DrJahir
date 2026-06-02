@@ -10,10 +10,10 @@ export default function RegistroPublicoPage() {
         <section className="space-y-6">
           <BrandMark subtitle="Formulario público de captación" />
           <Badge variant="gold">Registro abierto</Badge>
-          <h1 className="font-display text-4xl font-semibold leading-tight text-white sm:text-6xl sm:leading-[0.95]">
+          <h1 className="font-display text-4xl font-semibold leading-tight text-brand-ink sm:text-6xl sm:leading-[0.95]">
             Participa con el equipo y entra al radar territorial.
           </h1>
-          <p className="max-w-xl text-base leading-7 text-white/80 sm:text-lg">
+          <p className="max-w-xl text-base leading-7 text-brand-ink/72 sm:text-lg">
             Este formulario público recibe simpatizantes, voluntarios y líderes para alimentar la base de datos del CRM político con trazabilidad y diseño premium.
           </p>
 
@@ -24,9 +24,9 @@ export default function RegistroPublicoPage() {
               ["Automatización futura", "Mensajes y campañas por segmento."],
               ["Visual corporativa", "Diseño compatible con la identidad premium."]
             ].map(([title, detail]) => (
-              <Card key={title} className="border-white/20 bg-white/[0.04] p-5">
-                <p className="font-semibold text-white">{title}</p>
-                <p className="mt-2 text-sm leading-6 text-white/75">{detail}</p>
+              <Card key={title} className="border-brand-line bg-white/78 p-5">
+                <p className="font-semibold text-brand-ink">{title}</p>
+                <p className="mt-2 text-sm leading-6 text-brand-ink/70">{detail}</p>
               </Card>
             ))}
           </div>
