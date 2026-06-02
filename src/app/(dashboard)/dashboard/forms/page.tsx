@@ -13,7 +13,7 @@ export default function FormsPage() {
       </div>
 
       <div className="max-w-5xl">
-        <PublicIntakeForm />
+        <PublicIntakeForm mode="direct" />
       </div>
     </div>
   );

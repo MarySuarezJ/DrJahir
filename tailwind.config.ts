@@ -6,27 +6,27 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          night: "#273241",
-          navy: "#2f4858",
-          navySoft: "#5f7c83",
-          emerald: "#4f8f73",
-          emeraldSoft: "#83b99c",
-          gold: "#c99c45",
-          goldSoft: "#ead4a2",
-          cream: "#fffaf0",
-          beige: "#f3ead8",
-          sand: "#e7d7bd",
-          ink: "#273241",
-          muted: "#6f746f",
-          line: "#decfaf",
-          glass: "rgba(255,250,240,0.78)",
-          panel: "rgba(255, 250, 240, 0.92)"
+          night: "#031926",
+          navy: "#031926",
+          navySoft: "#468189",
+          emerald: "#77ACA2",
+          emeraldSoft: "#9DBEBB",
+          gold: "#C99C45",
+          goldSoft: "#F4E9CD",
+          cream: "#F4E9CD",
+          beige: "#FFF7E2",
+          sand: "#D8C896",
+          ink: "#031926",
+          muted: "#5E706F",
+          line: "#D8C896",
+          glass: "rgba(244,233,205,0.82)",
+          panel: "rgba(255, 247, 226, 0.94)"
         }
       },
       boxShadow: {
-        glowGold: "0 0 0 1px rgba(201, 156, 69, 0.18), 0 18px 48px rgba(201, 156, 69, 0.18)",
-        glowEmerald: "0 0 0 1px rgba(79, 143, 115, 0.18), 0 18px 48px rgba(79, 143, 115, 0.18)",
-        panel: "0 24px 60px rgba(61, 49, 29, 0.12)"
+        glowGold: "0 0 0 1px rgba(201, 156, 69, 0.2), 0 18px 48px rgba(201, 156, 69, 0.18)",
+        glowEmerald: "0 0 0 1px rgba(119, 172, 162, 0.28), 0 18px 48px rgba(70, 129, 137, 0.22)",
+        panel: "0 24px 60px rgba(3, 25, 38, 0.12)"
       },
       keyframes: {
         float: {
@@ -49,7 +49,7 @@ const config: Config = {
       },
       backgroundImage: {
         "brand-mesh":
-          "radial-gradient(circle at 18% 18%, rgba(234, 212, 162, 0.58), transparent 28%), radial-gradient(circle at 84% 12%, rgba(131, 185, 156, 0.38), transparent 24%), linear-gradient(135deg, rgba(255, 250, 240, 0.92), rgba(243, 234, 216, 0.78))"
+          "radial-gradient(circle at 18% 18%, rgba(244, 233, 205, 0.72), transparent 28%), radial-gradient(circle at 84% 12%, rgba(119, 172, 162, 0.42), transparent 24%), linear-gradient(135deg, rgba(255, 247, 226, 0.94), rgba(157, 190, 187, 0.28))"
       }
     }
   },

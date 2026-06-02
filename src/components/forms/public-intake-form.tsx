@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import type { EmploymentStatus, PersonRecord } from "@/lib/types/domain";
 
 type IntakeFormState = {
   fullName: string;
@@ -30,6 +31,10 @@ type IntakeFormState = {
   votingTable: string;
   leaderName: string;
   message: string;
+};
+
+type PublicIntakeFormProps = {
+  mode?: "public" | "direct";
 };
 
 const initialState: IntakeFormState = {
@@ -93,7 +98,39 @@ function fieldLabel(label: string, required = false) {
   );
 }
 
-export function PublicIntakeForm() {
+function splitFullName(fullName: string) {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length <= 1) return { firstName: parts[0] ?? "", lastName: "." };
+
+  const splitAt = Math.max(1, Math.ceil(parts.length / 2));
+  return {
+    firstName: parts.slice(0, splitAt).join(" "),
+    lastName: parts.slice(splitAt).join(" ") || "."
+  };
+}
+
+function supportLabelFromType(type: IntakeFormState["type"]) {
+  if (type === "leader") return "Líder";
+  if (type === "volunteer") return "Voluntario";
+  return "Simpatizante";
+}
+
+function supportScoreFromType(type: IntakeFormState["type"]) {
+  if (type === "leader") return 90;
+  if (type === "volunteer") return 80;
+  return 70;
+}
+
+function normalizeEmploymentStatus(value: string): EmploymentStatus {
+  if (value === "desempleado" || value === "independiente" || value === "estudiante" || value === "pensionado") {
+    return value;
+  }
+
+  return "empleado";
+}
+
+export function PublicIntakeForm({ mode = "public" }: PublicIntakeFormProps) {
+  const isDirectMode = mode === "direct";
   const [form, setForm] = useState<IntakeFormState>(initialState);
   const [resume, setResume] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -104,32 +141,111 @@ export function PublicIntakeForm() {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
+  async function uploadResumeForPerson() {
+    if (!resume) return "";
+
+    const formData = new FormData();
+    formData.append("file", resume);
+    formData.append("kind", "resume");
+    formData.append("documentNumber", form.documentNumber);
+
+    const response = await fetch("/api/files/upload", {
+      method: "POST",
+      body: formData
+    });
+    const data = (await response.json()) as { storageRef?: string; error?: string };
+
+    if (!response.ok || !data.storageRef) {
+      throw new Error(data.error ?? "No se pudo subir la hoja de vida.");
+    }
+
+    return data.storageRef;
+  }
+
+  async function saveDirectPerson() {
+    if (!form.documentNumber.trim()) {
+      throw new Error("Para guardar directo en personas debes escribir la cédula.");
+    }
+
+    const { firstName, lastName } = splitFullName(form.fullName);
+    const resumePath = await uploadResumeForPerson();
+    const supportLabel = supportLabelFromType(form.type);
+    const leaderNote = form.leaderName.trim() ? `Líder que refiere: ${form.leaderName.trim()}.` : "";
+    const personPayload: PersonRecord = {
+      id: "",
+      firstName,
+      lastName,
+      documentNumber: form.documentNumber.trim(),
+      birthDate: form.birthDate,
+      phone: form.phone,
+      whatsapp: form.whatsapp,
+      email: form.email,
+      address: form.address,
+      barrio: form.neighborhood,
+      comuna: form.commune,
+      municipality: form.municipality,
+      department: form.department,
+      profession: form.profession,
+      company: form.company,
+      jobTitle: form.jobTitle,
+      employmentStatus: normalizeEmploymentStatus(form.employmentStatus),
+      votingPlace: form.votingPlace,
+      votingTable: form.votingTable,
+      leaderName: form.leaderName,
+      leaderDocumentNumber: "",
+      leaderSector: form.type === "leader" ? form.neighborhood || form.commune || form.municipality : "",
+      notes: [leaderNote, form.message].filter(Boolean).join("\n"),
+      photoPath: "",
+      resumePath,
+      supportLabel,
+      supportScore: supportScoreFromType(form.type),
+      tags: ["captacion", isDirectMode ? "carga-interna" : "registro-publico"],
+      visibilityScope: "operational"
+    };
+
+    const response = await fetch("/api/people", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(personPayload)
+    });
+    const data = (await response.json()) as { error?: string };
+
+    if (!response.ok) {
+      throw new Error(data.error ?? "No se pudo guardar la persona.");
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);
     setMessage("");
     setError("");
 
-    const formData = new FormData();
-    Object.entries(form).forEach(([key, value]) => formData.append(key, value));
-    formData.append("sourcePage", window.location.pathname);
-    if (resume) formData.append("resume", resume);
-
     try {
-      const response = await fetch("/api/public-intake", {
-        method: "POST",
-        body: formData
-      });
-      const data = (await response.json()) as { error?: string };
+      if (isDirectMode) {
+        await saveDirectPerson();
+      } else {
+        const formData = new FormData();
+        Object.entries(form).forEach(([key, value]) => formData.append(key, value));
+        formData.append("sourcePage", window.location.pathname);
+        if (resume) formData.append("resume", resume);
 
-      if (!response.ok) {
-        setError(data.error ?? "No se pudo enviar el registro.");
-        return;
+        const response = await fetch("/api/public-intake", {
+          method: "POST",
+          body: formData
+        });
+        const data = (await response.json()) as { error?: string };
+
+        if (!response.ok) {
+          throw new Error(data.error ?? "No se pudo enviar el registro.");
+        }
       }
 
       setForm(initialState);
       setResume(null);
-      setMessage("Registro guardado. Quedó pendiente para revisión administrativa.");
+      setMessage(isDirectMode ? "Persona guardada directamente en el CRM." : "Registro guardado. Quedó pendiente para revisión administrativa.");
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "No se pudo guardar el registro.");
     } finally {
       setSubmitting(false);
     }
@@ -143,10 +259,12 @@ export function PublicIntakeForm() {
             <p className="text-xs uppercase tracking-[0.28em] text-brand-muted">Registro público</p>
             <h3 className="mt-2 font-display text-2xl font-semibold text-brand-ink">Datos personales y participación</h3>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-brand-ink/68">
-              Llena lo básico y agrega los datos que tengas. La hoja de vida es opcional.
+              {isDirectMode
+                ? "Este formulario guarda la persona directamente en el CRM. La hoja de vida es opcional."
+                : "Llena lo básico y agrega los datos que tengas. La hoja de vida es opcional."}
             </p>
           </div>
-          <Badge variant="gold">Activo</Badge>
+          <Badge variant={isDirectMode ? "emerald" : "gold"}>{isDirectMode ? "Carga directa" : "Activo"}</Badge>
         </div>
 
         <form className="mt-6 space-y-6" onSubmit={(event) => void handleSubmit(event)}>
@@ -160,8 +278,8 @@ export function PublicIntakeForm() {
                 <Input value={form.fullName} onChange={(event) => updateField("fullName", event.target.value)} placeholder="Ej. Mariana Suarez" required />
               </div>
               <div className="space-y-2">
-                {fieldLabel("Cédula")}
-                <Input value={form.documentNumber} onChange={(event) => updateField("documentNumber", event.target.value)} placeholder="Número de documento" />
+                {fieldLabel("Cédula", isDirectMode)}
+                <Input value={form.documentNumber} onChange={(event) => updateField("documentNumber", event.target.value)} placeholder="Número de documento" required={isDirectMode} />
               </div>
               <div className="space-y-2">
                 {fieldLabel("Cumpleaños")}
@@ -304,7 +422,9 @@ export function PublicIntakeForm() {
           </section>
 
           <div className="flex flex-col gap-3 border-t border-brand-line pt-5 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-brand-ink/62">Se guarda como registro pendiente para revisión administrativa.</p>
+            <p className="text-sm text-brand-ink/62">
+              {isDirectMode ? "Se guarda directo en Personas, con hoja de vida opcional." : "Se guarda como registro pendiente para revisión administrativa."}
+            </p>
             <Button variant="gold" type="submit" disabled={submitting}>
               {submitting ? "Guardando..." : "Enviar registro"}
             </Button>
