@@ -31,6 +31,8 @@ export type PersonRecord = {
   votingPlace: string;
   votingTable: string;
   leaderName: string;
+  leaderDocumentNumber?: string;
+  leaderSector?: string;
   notes: string;
   photoPath: string;
   resumePath: string;

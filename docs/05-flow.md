@@ -5,7 +5,7 @@
 ```mermaid
 flowchart LR
     A[Ingreso al login] --> B[Selección de rol]
-    B --> C[Autenticación Supabase o demo local]
+    B --> C[Autenticación Supabase o acceso temporal local]
     C --> D[Dashboard inteligente]
     D --> E[Personas]
     D --> F[Territorio]

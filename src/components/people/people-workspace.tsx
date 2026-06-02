@@ -1,51 +1,66 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import { PencilLine, Plus, Trash2, FileText, Eye, X, Upload, ImageIcon, Download } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  BadgeCheck,
+  Download,
+  Eye,
+  FileText,
+  GitBranch,
+  ImageIcon,
+  PencilLine,
+  Plus,
+  Trash2,
+  Upload,
+  UserCheck,
+  UsersRound,
+  UserX,
+  X
+} from "lucide-react";
 import { peopleSeed } from "@/lib/data/people";
 import type { EmploymentStatus, PersonRecord } from "@/lib/types/domain";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatCard } from "@/components/ui/stat-card";
-import { UsersRound, BriefcaseBusiness, BadgeCheck, UserX } from "lucide-react";
+import { hasSupabaseBrowserConfig } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 
-/* ── Visor de hoja de vida / foto ─────────────────────────────────── */
 function ResumeViewer({ url, name, onClose }: { url: string; name: string; onClose: () => void }) {
   const isImage = url.match(/\.(jpg|jpeg|png|webp|gif)$/i) || url.includes("image/");
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="relative flex h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-[24px] border border-white/20 bg-[#0e1e38] shadow-2xl">
-        {/* Header */}
-        <div className="flex shrink-0 items-center justify-between gap-4 border-b border-white/15 px-6 py-4">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-brand-ink/78 p-4 backdrop-blur-sm">
+      <div className="relative flex h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-[24px] border border-brand-line bg-white shadow-2xl">
+        <div className="flex shrink-0 items-center justify-between gap-4 border-b border-brand-line px-6 py-4">
           <div className="flex items-center gap-3">
-            <FileText className="h-5 w-5 text-brand-goldSoft" />
+            <FileText className="h-5 w-5 text-brand-gold" />
             <div>
-              <p className="text-xs uppercase tracking-widest text-white/55">Hoja de vida</p>
-              <p className="font-semibold text-white">{name}</p>
+              <p className="text-xs uppercase tracking-widest text-brand-muted">Documento</p>
+              <p className="font-semibold text-brand-ink">{name}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <a href={url} download target="_blank" rel="noreferrer"
-              className="flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/[0.06] px-3 py-2 text-xs font-semibold text-white/70 hover:bg-white/15 hover:text-white transition">
-              <Download className="h-3.5 w-3.5" />Descargar
+            <a
+              href={url}
+              download
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 rounded-xl border border-brand-line bg-brand-cream px-3 py-2 text-xs font-semibold text-brand-ink/70 transition hover:bg-brand-beige"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Descargar
             </a>
-            <a href={url} target="_blank" rel="noreferrer"
-              className="flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/[0.06] px-3 py-2 text-xs font-semibold text-white/70 hover:bg-white/15 hover:text-white transition">
-              <Eye className="h-3.5 w-3.5" />Abrir en nueva pestaña
-            </a>
-            <button onClick={onClose} className="rounded-xl border border-white/20 bg-white/[0.06] p-2 text-white/60 hover:bg-white/15 hover:text-white transition">
+            <button onClick={onClose} className="rounded-xl border border-brand-line bg-white p-2 text-brand-muted transition hover:bg-brand-cream hover:text-brand-ink">
               <X className="h-4 w-4" />
             </button>
           </div>
         </div>
 
-        {/* Contenido */}
         <div className="flex-1 overflow-hidden">
           {isImage ? (
             <div className="flex h-full items-center justify-center overflow-auto p-6">
@@ -53,12 +68,7 @@ function ResumeViewer({ url, name, onClose }: { url: string; name: string; onClo
               <img src={url} alt={name} className="max-h-full max-w-full rounded-xl object-contain shadow-xl" />
             </div>
           ) : (
-            <iframe
-              src={url}
-              title={name}
-              className="h-full w-full border-0"
-              style={{ background: "#fff" }}
-            />
+            <iframe src={url} title={name} className="h-full w-full border-0" />
           )}
         </div>
       </div>
@@ -86,6 +96,8 @@ const blankPerson = (): PersonRecord => ({
   votingPlace: "",
   votingTable: "",
   leaderName: "",
+  leaderDocumentNumber: "",
+  leaderSector: "",
   notes: "",
   photoPath: "",
   resumePath: "",
@@ -103,62 +115,106 @@ const employmentLabels: Record<EmploymentStatus, string> = {
   pensionado: "Pensionado"
 };
 
+function fullName(person: PersonRecord) {
+  return `${person.firstName} ${person.lastName}`.trim();
+}
+
+function isLeader(person: PersonRecord) {
+  return person.supportLabel.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes("lider");
+}
+
 export function PeopleWorkspace() {
   const [people, setPeople] = useState<PersonRecord[]>(peopleSeed);
   const [selectedId, setSelectedId] = useState(peopleSeed[0]?.id ?? "");
+  const [selectedLeaderDocument, setSelectedLeaderDocument] = useState(peopleSeed.find(isLeader)?.documentNumber ?? "");
   const [search, setSearch] = useState("");
   const [municipalityFilter, setMunicipalityFilter] = useState("all");
-  const [employmentFilter, setEmploymentFilter] = useState("all");
   const [draft, setDraft] = useState<PersonRecord>(peopleSeed[0] ?? blankPerson());
   const [mode, setMode] = useState<"view" | "create">("view");
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const [viewerName, setViewerName] = useState("");
+  const [syncMessage, setSyncMessage] = useState("");
+  const [saving, setSaving] = useState(false);
   const resumeInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
-  function handleResumeUpload(file: File) {
-    const url = URL.createObjectURL(file);
-    updateField("resumePath", url);
-  }
+  const loadPeopleFromApi = useCallback(async (preferredDocumentNumber?: string) => {
+    if (!hasSupabaseBrowserConfig()) return;
 
-  function handlePhotoUpload(file: File) {
-    const url = URL.createObjectURL(file);
-    updateField("photoPath", url);
-  }
+    setSyncMessage("Sincronizando personas desde Supabase...");
+    const response = await fetch("/api/people");
+    const data = (await response.json()) as { people?: PersonRecord[]; error?: string };
 
-  function openViewer(url: string, name: string) {
-    setViewerUrl(url);
-    setViewerName(name);
-  }
+    if (!response.ok || !Array.isArray(data.people)) {
+      setSyncMessage(data.error ?? "No se pudieron cargar personas desde Supabase.");
+      return;
+    }
 
-  const selectedPerson = useMemo(() => people.find((item) => item.id === selectedId) ?? people[0], [people, selectedId]);
+    const nextPeople = data.people;
+    const nextSelected = preferredDocumentNumber
+      ? nextPeople.find((person) => person.documentNumber === preferredDocumentNumber) ?? nextPeople[0]
+      : nextPeople[0];
+    const nextLeader = nextSelected && isLeader(nextSelected) ? nextSelected : nextPeople.find(isLeader);
+
+    setPeople(nextPeople);
+    setSelectedId(nextSelected?.id ?? "");
+    setDraft(nextSelected ?? blankPerson());
+    setMode(nextSelected ? "view" : "create");
+    setSelectedLeaderDocument(nextLeader?.documentNumber ?? "");
+    setSyncMessage(nextPeople.length > 0 ? "Datos cargados desde Supabase." : "Supabase conectado. Aún no hay personas cargadas.");
+  }, []);
+
+  useEffect(() => {
+    if (hasSupabaseBrowserConfig()) {
+      void loadPeopleFromApi();
+    } else {
+      setSyncMessage("Sin variables Supabase: puedes revisar y editar la interfaz durante esta sesión.");
+    }
+  }, [loadPeopleFromApi]);
+
+  const leaders = useMemo(() => people.filter(isLeader), [people]);
+  const selectedLeader = useMemo(
+    () => leaders.find((leader) => leader.documentNumber === selectedLeaderDocument) ?? leaders[0],
+    [leaders, selectedLeaderDocument]
+  );
+
+  const assignedPeople = useMemo(() => {
+    if (!selectedLeader) return [];
+    return people.filter((person) => person.leaderDocumentNumber === selectedLeader.documentNumber && person.documentNumber !== selectedLeader.documentNumber);
+  }, [people, selectedLeader]);
+
+  const municipalities = useMemo(() => Array.from(new Set(people.map((person) => person.municipality))), [people]);
 
   const filteredPeople = useMemo(
     () =>
       people.filter((person) => {
-        const fullName = `${person.firstName} ${person.lastName}`.toLowerCase();
-        const matchesSearch =
-          fullName.includes(search.toLowerCase()) ||
-          person.documentNumber.includes(search) ||
-          person.leaderName.toLowerCase().includes(search.toLowerCase());
+        const haystack = [
+          fullName(person),
+          person.documentNumber,
+          person.leaderName,
+          person.leaderDocumentNumber,
+          person.leaderSector,
+          person.barrio,
+          person.comuna,
+          person.municipality
+        ]
+          .join(" ")
+          .toLowerCase();
+        const matchesSearch = haystack.includes(search.toLowerCase());
         const matchesMunicipality = municipalityFilter === "all" || person.municipality === municipalityFilter;
-        const matchesEmployment = employmentFilter === "all" || person.employmentStatus === employmentFilter;
-
-        return matchesSearch && matchesMunicipality && matchesEmployment;
+        return matchesSearch && matchesMunicipality;
       }),
-    [employmentFilter, municipalityFilter, people, search]
+    [municipalityFilter, people, search]
   );
-
-  const municipalities = useMemo(() => Array.from(new Set(people.map((person) => person.municipality))), [people]);
 
   const stats = useMemo(
     () => ({
       total: people.length,
-      leaders: people.filter((person) => person.supportLabel === "Líder").length,
-      employed: people.filter((person) => person.employmentStatus === "empleado").length,
-      unemployed: people.filter((person) => person.employmentStatus === "desempleado").length
+      leaders: leaders.length,
+      assigned: people.filter((person) => person.leaderDocumentNumber).length,
+      unassigned: people.filter((person) => !isLeader(person) && !person.leaderDocumentNumber).length
     }),
-    [people]
+    [leaders.length, people]
   );
 
   function syncDraft(nextPerson: PersonRecord) {
@@ -169,6 +225,7 @@ export function PeopleWorkspace() {
     setSelectedId(person.id);
     setMode("view");
     syncDraft(person);
+    if (isLeader(person)) setSelectedLeaderDocument(person.documentNumber);
   }
 
   function createNew() {
@@ -180,358 +237,466 @@ export function PeopleWorkspace() {
   }
 
   function updateField<K extends keyof PersonRecord>(field: K, value: PersonRecord[K]) {
-    setDraft((current) => ({ ...current, [field]: value }));
+    setDraft((current) => {
+      const next = { ...current, [field]: value };
+      if (field === "supportLabel" && isLeader(next)) {
+        next.leaderDocumentNumber = "";
+        next.leaderName = "";
+      }
+      return next;
+    });
   }
 
-  function handleSave() {
+  async function handleSave() {
+    const selectedLeaderForDraft = leaders.find((leader) => leader.documentNumber === draft.leaderDocumentNumber);
     const nextPerson: PersonRecord = {
       ...draft,
       id: mode === "create" ? `person-${globalThis.crypto.randomUUID()}` : draft.id,
-      tags: typeof draft.tags[0] === "string" ? draft.tags : draft.tags.filter(Boolean),
+      leaderName: isLeader(draft) ? "" : selectedLeaderForDraft ? fullName(selectedLeaderForDraft) : draft.leaderName,
+      tags: draft.tags.filter(Boolean),
       supportScore: Number.isFinite(draft.supportScore) ? draft.supportScore : 70
     };
+
+    if (hasSupabaseBrowserConfig()) {
+      setSaving(true);
+      setSyncMessage("Guardando persona en Supabase...");
+
+      try {
+        const response = await fetch("/api/people", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(nextPerson)
+        });
+        const data = (await response.json()) as { error?: string };
+
+        if (!response.ok) {
+          setSyncMessage(data.error ?? "No se pudo guardar la persona.");
+          return;
+        }
+
+        await loadPeopleFromApi(nextPerson.documentNumber);
+        setSyncMessage("Persona guardada en Supabase.");
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
 
     if (mode === "create") {
       setPeople((current) => [nextPerson, ...current]);
       setSelectedId(nextPerson.id);
       setMode("view");
       setDraft(nextPerson);
+      if (isLeader(nextPerson)) setSelectedLeaderDocument(nextPerson.documentNumber);
       return;
     }
 
     setPeople((current) => current.map((person) => (person.id === nextPerson.id ? nextPerson : person)));
     setSelectedId(nextPerson.id);
     setDraft(nextPerson);
+    if (isLeader(nextPerson)) setSelectedLeaderDocument(nextPerson.documentNumber);
   }
 
-  function handleDelete() {
-    if (!selectedId) {
+  async function handleDelete() {
+    if (!selectedId) return;
+
+    const deleted = people.find((person) => person.id === selectedId);
+
+    if (hasSupabaseBrowserConfig() && deleted) {
+      setSaving(true);
+      setSyncMessage("Eliminando persona en Supabase...");
+
+      try {
+        const response = await fetch("/api/people", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ documentNumber: deleted.documentNumber })
+        });
+        const data = (await response.json()) as { error?: string };
+
+        if (!response.ok) {
+          setSyncMessage(data.error ?? "No se pudo eliminar la persona.");
+          return;
+        }
+
+        await loadPeopleFromApi();
+        setSyncMessage("Persona eliminada en Supabase.");
+      } finally {
+        setSaving(false);
+      }
       return;
     }
 
-    const nextPeople = people.filter((person) => person.id !== selectedId);
-    setPeople(nextPeople);
+    const nextPeople = people
+      .filter((person) => person.id !== selectedId)
+      .map((person) =>
+        deleted && person.leaderDocumentNumber === deleted.documentNumber
+          ? { ...person, leaderDocumentNumber: "", leaderName: "" }
+          : person
+      );
     const nextSelected = nextPeople[0];
 
+    setPeople(nextPeople);
     if (nextSelected) {
       setSelectedId(nextSelected.id);
       setDraft(nextSelected);
+      setSelectedLeaderDocument(nextPeople.find(isLeader)?.documentNumber ?? "");
     } else {
       setSelectedId("");
       setDraft(blankPerson());
       setMode("create");
+      setSelectedLeaderDocument("");
     }
   }
 
+  function handleResumeUpload(file: File) {
+    updateField("resumePath", URL.createObjectURL(file));
+  }
+
+  function handlePhotoUpload(file: File) {
+    updateField("photoPath", URL.createObjectURL(file));
+  }
+
+  function openViewer(url: string, name: string) {
+    setViewerUrl(url);
+    setViewerName(name);
+  }
+
+  const selectedIsLeader = isLeader(draft);
+
   return (
     <div className="space-y-6">
+      {syncMessage && (
+        <div className="rounded-2xl border border-brand-line bg-white/78 px-4 py-3 text-sm text-brand-ink/70 shadow-panel">
+          {syncMessage}
+        </div>
+      )}
+
       <div className="grid gap-4 lg:grid-cols-4">
-        <StatCard label="Total personas" value={String(stats.total)} hint="Base registrada" delta="+12 esta semana" icon={<UsersRound className="h-5 w-5" />} tone="gold" />
-        <StatCard label="Líderes" value={String(stats.leaders)} hint="Estructura activa" delta="Segmentos clave" icon={<BadgeCheck className="h-5 w-5" />} tone="emerald" />
-        <StatCard label="Empleados" value={String(stats.employed)} hint="Campo laboral" delta="Oportunidad de contacto" icon={<BriefcaseBusiness className="h-5 w-5" />} tone="navy" />
-        <StatCard label="Desempleados" value={String(stats.unemployed)} hint="Base prioritaria" delta="Atención social" icon={<UserX className="h-5 w-5" />} tone="neutral" />
+        <StatCard label="Total personas" value={String(stats.total)} hint="Base registrada" delta="CRM territorial" icon={<UsersRound className="h-5 w-5" />} tone="gold" />
+        <StatCard label="Líderes" value={String(stats.leaders)} hint="Responsables por sector" delta="Estructura" icon={<BadgeCheck className="h-5 w-5" />} tone="emerald" />
+        <StatCard label="Asignadas" value={String(stats.assigned)} hint="Personas con líder" delta="Movilización" icon={<GitBranch className="h-5 w-5" />} tone="navy" />
+        <StatCard label="Sin líder" value={String(stats.unassigned)} hint="Pendientes por asignar" delta="Revisión" icon={<UserX className="h-5 w-5" />} tone="neutral" />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.25fr_0.95fr]">
-        <Card className="border-white/20 bg-white/[0.04]">
-          <div className="border-b border-white/20 p-5">
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.28em] text-brand-muted">Liderazgo territorial</p>
+              <h2 className="mt-1 font-display text-2xl font-semibold text-brand-ink">Líderes y personas a cargo</h2>
+            </div>
+            <Button variant="gold" onClick={createNew}>
+              <Plus className="h-4 w-4" />
+              Nuevo registro
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
+          <div className="space-y-3">
+            {leaders.map((leader) => {
+              const count = people.filter((person) => person.leaderDocumentNumber === leader.documentNumber).length;
+              const active = selectedLeader?.documentNumber === leader.documentNumber;
+              return (
+                <button
+                  key={leader.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedLeaderDocument(leader.documentNumber);
+                    openSelected(leader);
+                  }}
+                  className={cn(
+                    "w-full rounded-2xl border p-4 text-left transition",
+                    active ? "border-brand-gold/45 bg-brand-gold/12 shadow-glowGold" : "border-brand-line bg-white/70 hover:border-brand-gold/35 hover:bg-brand-cream"
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-brand-ink">{fullName(leader)}</p>
+                      <p className="mt-1 text-sm text-brand-ink/62">{leader.leaderSector || leader.barrio || "Sector por definir"}</p>
+                    </div>
+                    <Badge variant="gold">{count} personas</Badge>
+                  </div>
+                  <p className="mt-2 text-xs text-brand-muted">CC {leader.documentNumber}</p>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="rounded-3xl border border-brand-line bg-white/72 p-4">
+            {selectedLeader ? (
+              <>
+                <div className="flex flex-col gap-3 border-b border-brand-line pb-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.24em] text-brand-muted">Listado movilizado por</p>
+                    <h3 className="mt-1 font-display text-2xl font-semibold text-brand-ink">{fullName(selectedLeader)}</h3>
+                    <p className="mt-1 text-sm text-brand-ink/64">{selectedLeader.leaderSector || selectedLeader.barrio}</p>
+                  </div>
+                  <Badge variant="emerald">{assignedPeople.length} asignadas</Badge>
+                </div>
+
+                <div className="mt-4 max-h-[360px] space-y-2 overflow-auto pr-1">
+                  {assignedPeople.length === 0 ? (
+                    <div className="rounded-2xl border border-brand-line bg-brand-cream/70 px-4 py-6 text-sm text-brand-ink/64">
+                      Este líder todavía no tiene personas asignadas.
+                    </div>
+                  ) : (
+                    assignedPeople.map((person) => (
+                      <button
+                        type="button"
+                        key={person.id}
+                        onClick={() => openSelected(person)}
+                        className="grid w-full gap-2 rounded-2xl border border-brand-line bg-white px-4 py-3 text-left transition hover:border-brand-gold/30 hover:bg-brand-cream sm:grid-cols-[1fr_auto]"
+                      >
+                        <div>
+                          <p className="font-semibold text-brand-ink">{fullName(person)}</p>
+                          <p className="text-xs text-brand-ink/58">CC {person.documentNumber} · {person.whatsapp || person.phone || "Sin teléfono"}</p>
+                        </div>
+                        <Badge variant={person.supportLabel === "Voluntario" ? "emerald" : "neutral"}>{person.supportLabel}</Badge>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="rounded-2xl border border-brand-line bg-brand-cream/70 px-4 py-6 text-sm text-brand-ink/64">
+                Crea o importa un líder para ver su estructura territorial.
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-6 xl:grid-cols-[1.15fr_0.95fr]">
+        <Card>
+          <CardHeader>
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <p className="text-xs uppercase tracking-[0.28em] text-white/65">Gestión de personas</p>
-                <h2 className="mt-2 font-display text-3xl font-semibold text-white">CRUD local preparado para Supabase</h2>
+                <p className="text-xs uppercase tracking-[0.28em] text-brand-muted">Directorio CRM</p>
+                <h2 className="mt-1 font-display text-2xl font-semibold text-brand-ink">Personas, líderes y movilización</h2>
               </div>
-              <Button variant="gold" onClick={createNew}>
-                <Plus className="h-4 w-4" />
-                Nuevo registro
+              <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[460px]">
+                <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar nombre, cédula, líder o sector" />
+                <Select value={municipalityFilter} onChange={(event) => setMunicipalityFilter(event.target.value)}>
+                  <option value="all">Todos los municipios</option>
+                  {municipalities.map((municipality) => (
+                    <option key={municipality} value={municipality}>
+                      {municipality}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <tr>
+                  <TableHead>Persona</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Territorio</TableHead>
+                  <TableHead>Líder responsable</TableHead>
+                  <TableHead>Laboral</TableHead>
+                  <TableHead>HV</TableHead>
+                </tr>
+              </TableHeader>
+              <TableBody>
+                {filteredPeople.map((person) => {
+                  const active = selectedId === person.id;
+                  return (
+                    <TableRow key={person.id} onClick={() => openSelected(person)} className={cn("cursor-pointer", active && "bg-brand-gold/10")}>
+                      <TableCell>
+                        <div>
+                          <p className="font-semibold text-brand-ink">{fullName(person)}</p>
+                          <p className="text-xs text-brand-ink/58">CC {person.documentNumber}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={isLeader(person) ? "gold" : person.supportLabel === "Voluntario" ? "emerald" : "neutral"}>{isLeader(person) ? "Líder" : person.supportLabel}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <p className="text-brand-ink">{person.municipality}</p>
+                        <p className="text-xs text-brand-ink/58">{person.barrio} · {person.comuna}</p>
+                      </TableCell>
+                      <TableCell>{isLeader(person) ? person.leaderSector || "Sector por definir" : person.leaderName || "Sin asignar"}</TableCell>
+                      <TableCell>
+                        <p className="text-brand-ink">{employmentLabels[person.employmentStatus]}</p>
+                        <p className="text-xs text-brand-ink/58">{person.profession}</p>
+                      </TableCell>
+                      <TableCell onClick={(event) => event.stopPropagation()}>
+                        {person.resumePath ? (
+                          <button
+                            onClick={() => openViewer(person.resumePath, fullName(person))}
+                            className="flex items-center gap-1 rounded-lg border border-brand-gold/25 bg-brand-gold/10 px-2.5 py-1.5 text-xs font-semibold text-brand-ink transition hover:bg-brand-gold/20"
+                          >
+                            <FileText className="h-3.5 w-3.5" />
+                            Ver
+                          </button>
+                        ) : (
+                          <span className="text-xs text-brand-muted">Sin archivo</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.28em] text-brand-muted">Detalle y edición</p>
+                <h3 className="mt-1 font-display text-2xl font-semibold text-brand-ink">{mode === "create" ? "Nuevo registro" : fullName(draft)}</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" onClick={() => selectedId && setDraft(people.find((person) => person.id === selectedId) ?? draft)}>
+                  <PencilLine className="h-4 w-4" />
+                </Button>
+              <Button variant="danger" onClick={handleDelete} disabled={saving}>
+                <Trash2 className="h-4 w-4" />
               </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3 md:grid-cols-2">
+              <Input value={draft.firstName} onChange={(event) => updateField("firstName", event.target.value)} placeholder="Nombres" />
+              <Input value={draft.lastName} onChange={(event) => updateField("lastName", event.target.value)} placeholder="Apellidos" />
+              <Input value={draft.documentNumber} onChange={(event) => updateField("documentNumber", event.target.value)} placeholder="Cédula" />
+              <Select value={draft.supportLabel} onChange={(event) => updateField("supportLabel", event.target.value)}>
+                <option value="Líder">Líder</option>
+                <option value="Voluntario">Voluntario</option>
+                <option value="Simpatizante">Simpatizante</option>
+                <option value="Votante">Votante</option>
+              </Select>
             </div>
 
-            <div className="mt-5 grid gap-3 xl:grid-cols-3">
-              <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por nombre, cédula o líder" />
-              <Select value={municipalityFilter} onChange={(event) => setMunicipalityFilter(event.target.value)}>
-                <option value="all">Todos los municipios</option>
-                {municipalities.map((municipality) => (
-                  <option key={municipality} value={municipality}>
-                    {municipality}
+            {selectedIsLeader ? (
+              <Input value={draft.leaderSector ?? ""} onChange={(event) => updateField("leaderSector", event.target.value)} placeholder="Sector que lidera. Ej: Bajo Tablazo" />
+            ) : (
+              <Select value={draft.leaderDocumentNumber ?? ""} onChange={(event) => updateField("leaderDocumentNumber", event.target.value)}>
+                <option value="">Sin líder asignado</option>
+                {leaders.map((leader) => (
+                  <option key={leader.documentNumber} value={leader.documentNumber}>
+                    {fullName(leader)} · {leader.leaderSector || leader.barrio}
                   </option>
                 ))}
               </Select>
-              <Select value={employmentFilter} onChange={(event) => setEmploymentFilter(event.target.value)}>
-                <option value="all">Todos los estados laborales</option>
+            )}
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <Input value={draft.phone} onChange={(event) => updateField("phone", event.target.value)} placeholder="Teléfono" />
+              <Input value={draft.whatsapp} onChange={(event) => updateField("whatsapp", event.target.value)} placeholder="WhatsApp" />
+              <Input value={draft.email} onChange={(event) => updateField("email", event.target.value)} placeholder="Correo" type="email" />
+              <Input value={draft.address} onChange={(event) => updateField("address", event.target.value)} placeholder="Dirección" />
+              <Input value={draft.department} onChange={(event) => updateField("department", event.target.value)} placeholder="Departamento" />
+              <Input value={draft.municipality} onChange={(event) => updateField("municipality", event.target.value)} placeholder="Municipio" />
+              <Input value={draft.comuna} onChange={(event) => updateField("comuna", event.target.value)} placeholder="Comuna, zona o corregimiento" />
+              <Input value={draft.barrio} onChange={(event) => updateField("barrio", event.target.value)} placeholder="Barrio o vereda" />
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <Input value={draft.profession} onChange={(event) => updateField("profession", event.target.value)} placeholder="Profesión" />
+              <Input value={draft.company} onChange={(event) => updateField("company", event.target.value)} placeholder="Empresa" />
+              <Input value={draft.jobTitle} onChange={(event) => updateField("jobTitle", event.target.value)} placeholder="Cargo" />
+              <Select value={draft.employmentStatus} onChange={(event) => updateField("employmentStatus", event.target.value as EmploymentStatus)}>
                 {Object.entries(employmentLabels).map(([value, label]) => (
                   <option key={value} value={value}>
                     {label}
                   </option>
                 ))}
               </Select>
-            </div>
-          </div>
-
-          <div className="overflow-hidden rounded-b-[28px]">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <tr>
-                    <TableHead>Persona</TableHead>
-                    <TableHead>Territorio</TableHead>
-                    <TableHead>Líder</TableHead>
-                    <TableHead>Laboral</TableHead>
-                    <TableHead>Apoyo</TableHead>
-                    <TableHead>HV</TableHead>
-                  </tr>
-                </TableHeader>
-                <TableBody>
-                  {filteredPeople.map((person) => {
-                    const active = selectedId === person.id;
-                    return (
-                      <TableRow key={person.id} onClick={() => openSelected(person)} className={active ? "bg-brand-gold/10" : "cursor-pointer"}>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {person.photoPath && (
-                              /* eslint-disable-next-line @next/next/no-img-element */
-                              <img
-                                src={person.photoPath}
-                                alt=""
-                                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                                className="h-8 w-8 shrink-0 rounded-lg object-cover border border-white/15"
-                              />
-                            )}
-                            <div>
-                              <p className="font-semibold text-white">{person.firstName} {person.lastName}</p>
-                              <p className="text-xs text-white/65">CC {person.documentNumber}</p>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="text-white">{person.municipality}</p>
-                            <p className="text-xs text-white/65">{person.barrio} · {person.comuna}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>{person.leaderName}</TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="text-white">{employmentLabels[person.employmentStatus]}</p>
-                            <p className="text-xs text-white/65">{person.profession}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Badge variant={person.supportLabel === "Líder" ? "gold" : person.supportLabel === "Voluntario" ? "emerald" : "neutral"}>{person.supportLabel}</Badge>
-                            <span className="text-xs text-white/65">{person.supportScore}%</span>
-                          </div>
-                        </TableCell>
-                        <TableCell onClick={(e) => e.stopPropagation()}>
-                          {person.resumePath ? (
-                            <button
-                              onClick={() => openViewer(person.resumePath, `${person.firstName} ${person.lastName}`)}
-                              className="flex items-center gap-1 rounded-lg border border-brand-gold/25 bg-brand-gold/10 px-2.5 py-1.5 text-xs font-semibold text-brand-goldSoft hover:bg-brand-gold/20 transition"
-                            >
-                              <FileText className="h-3.5 w-3.5" />Ver
-                            </button>
-                          ) : (
-                            <span className="text-xs text-white/30">—</span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="border-white/20 bg-white/[0.04]">
-          <div className="p-5">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-xs uppercase tracking-[0.28em] text-white/65">Detalle y edición</p>
-                <h3 className="mt-2 font-display text-2xl font-semibold text-white">{mode === "create" ? "Nuevo registro" : `${selectedPerson?.firstName ?? draft.firstName} ${selectedPerson?.lastName ?? draft.lastName}`}</h3>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" onClick={() => selectedPerson && openSelected(selectedPerson)}>
-                  <PencilLine className="h-4 w-4" />
-                  Cargar seleccionado
-                </Button>
-                <Button variant="danger" onClick={handleDelete}>
-                  <Trash2 className="h-4 w-4" />
-                  Eliminar
-                </Button>
-              </div>
+              <Input value={draft.votingPlace} onChange={(event) => updateField("votingPlace", event.target.value)} placeholder="Puesto de votación" />
+              <Input value={draft.votingTable} onChange={(event) => updateField("votingTable", event.target.value)} placeholder="Mesa" />
             </div>
 
-            <div className="mt-5 grid gap-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <Input value={draft.firstName} onChange={(event) => updateField("firstName", event.target.value)} placeholder="Nombres" />
-                <Input value={draft.lastName} onChange={(event) => updateField("lastName", event.target.value)} placeholder="Apellidos" />
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Input value={draft.documentNumber} onChange={(event) => updateField("documentNumber", event.target.value)} placeholder="Cédula" />
-                <Input value={draft.phone} onChange={(event) => updateField("phone", event.target.value)} placeholder="Teléfono" />
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Input value={draft.whatsapp} onChange={(event) => updateField("whatsapp", event.target.value)} placeholder="WhatsApp" />
-                <Input value={draft.email} onChange={(event) => updateField("email", event.target.value)} placeholder="Correo" type="email" />
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Input value={draft.address} onChange={(event) => updateField("address", event.target.value)} placeholder="Dirección" />
-                <Input value={draft.barrio} onChange={(event) => updateField("barrio", event.target.value)} placeholder="Barrio" />
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Input value={draft.comuna} onChange={(event) => updateField("comuna", event.target.value)} placeholder="Comuna" />
-                <Input value={draft.municipality} onChange={(event) => updateField("municipality", event.target.value)} placeholder="Municipio" />
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Input value={draft.department} onChange={(event) => updateField("department", event.target.value)} placeholder="Departamento" />
-                <Input value={draft.profession} onChange={(event) => updateField("profession", event.target.value)} placeholder="Profesión" />
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Input value={draft.company} onChange={(event) => updateField("company", event.target.value)} placeholder="Empresa" />
-                <Input value={draft.jobTitle} onChange={(event) => updateField("jobTitle", event.target.value)} placeholder="Cargo" />
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Select value={draft.employmentStatus} onChange={(event) => updateField("employmentStatus", event.target.value as EmploymentStatus)}>
-                  {Object.entries(employmentLabels).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </Select>
-                <Input value={draft.votingPlace} onChange={(event) => updateField("votingPlace", event.target.value)} placeholder="Lugar de votación" />
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Input value={draft.votingTable} onChange={(event) => updateField("votingTable", event.target.value)} placeholder="Mesa" />
-                <Input value={draft.leaderName} onChange={(event) => updateField("leaderName", event.target.value)} placeholder="Líder asociado" />
-              </div>
-              {/* Foto de perfil */}
-              <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-4 space-y-3">
-                <p className="text-xs uppercase tracking-widest text-white/55">Foto de perfil</p>
-                <div className="flex items-center gap-3 flex-wrap">
+            <div className="grid gap-3 md:grid-cols-2">
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                value={draft.supportScore}
+                onChange={(event) => updateField("supportScore", Number(event.target.value) as PersonRecord["supportScore"])}
+                placeholder="Puntaje de apoyo"
+              />
+              <Select value={draft.visibilityScope} onChange={(event) => updateField("visibilityScope", event.target.value as PersonRecord["visibilityScope"])}>
+                <option value="public">Público</option>
+                <option value="operational">Operativo</option>
+                <option value="legal">Legal</option>
+                <option value="restricted">Restringido</option>
+              </Select>
+            </div>
+
+            <Input
+              value={draft.tags.join(", ")}
+              onChange={(event) => updateField("tags", event.target.value.split(",").map((tag) => tag.trim()).filter(Boolean))}
+              placeholder="Etiquetas separadas por coma"
+            />
+            <Textarea value={draft.notes} onChange={(event) => updateField("notes", event.target.value)} placeholder="Observaciones" />
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="rounded-2xl border border-brand-line bg-white/70 p-4">
+                <p className="text-xs uppercase tracking-widest text-brand-muted">Foto de perfil</p>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
                   {draft.photoPath ? (
                     <>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={draft.photoPath}
-                        alt="Foto"
-                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                        className="h-16 w-16 rounded-xl object-cover border border-white/20"
-                      />
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => openViewer(draft.photoPath, `Foto — ${draft.firstName} ${draft.lastName}`)}>
-                          <Eye className="h-3.5 w-3.5" />Ver
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => photoInputRef.current?.click()}>
-                          <Upload className="h-3.5 w-3.5" />Cambiar
-                        </Button>
-                      </div>
+                      <img src={draft.photoPath} alt="Foto" className="h-14 w-14 rounded-xl border border-brand-line object-cover" />
+                      <Button variant="ghost" size="sm" onClick={() => openViewer(draft.photoPath, `Foto - ${fullName(draft)}`)}>
+                        <Eye className="h-3.5 w-3.5" />
+                        Ver
+                      </Button>
                     </>
                   ) : (
-                    <button
-                      onClick={() => photoInputRef.current?.click()}
-                      className="flex items-center gap-2 rounded-xl border border-dashed border-white/25 bg-white/[0.04] px-4 py-3 text-sm text-white/60 hover:border-white/40 hover:text-white transition"
-                    >
-                      <ImageIcon className="h-4 w-4" />Subir foto de perfil
-                    </button>
+                    <Button variant="ghost" size="sm" onClick={() => photoInputRef.current?.click()}>
+                      <ImageIcon className="h-3.5 w-3.5" />
+                      Subir foto
+                    </Button>
                   )}
-                  <input
-                    ref={photoInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f); }}
-                  />
+                  <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) handlePhotoUpload(file); }} />
                 </div>
               </div>
 
-              {/* Hoja de vida */}
-              <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-4 space-y-3">
-                <p className="text-xs uppercase tracking-widest text-white/55">Hoja de vida</p>
-                <div className="flex items-center gap-3 flex-wrap">
+              <div className="rounded-2xl border border-brand-line bg-white/70 p-4">
+                <p className="text-xs uppercase tracking-widest text-brand-muted">Hoja de vida</p>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
                   {draft.resumePath ? (
-                    <>
-                      <div className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/[0.08] px-3 py-2.5">
-                        <FileText className="h-4 w-4 text-brand-goldSoft shrink-0" />
-                        <span className="max-w-[180px] truncate text-sm text-white">
-                          {draft.resumePath.startsWith("blob:") ? "Documento cargado" : draft.resumePath.split("/").pop()}
-                        </span>
-                      </div>
-                      <Button variant="gold" size="sm" onClick={() => openViewer(draft.resumePath, `Hoja de vida — ${draft.firstName} ${draft.lastName}`)}>
-                        <Eye className="h-3.5 w-3.5" />Ver hoja de vida
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => resumeInputRef.current?.click()}>
-                        <Upload className="h-3.5 w-3.5" />Cambiar
-                      </Button>
-                    </>
+                    <Button variant="gold" size="sm" onClick={() => openViewer(draft.resumePath, `Hoja de vida - ${fullName(draft)}`)}>
+                      <Eye className="h-3.5 w-3.5" />
+                      Ver hoja de vida
+                    </Button>
                   ) : (
-                    <button
-                      onClick={() => resumeInputRef.current?.click()}
-                      className="flex items-center gap-2 rounded-xl border border-dashed border-white/25 bg-white/[0.04] px-4 py-3 text-sm text-white/60 hover:border-white/40 hover:text-white transition"
-                    >
-                      <FileText className="h-4 w-4" />Subir hoja de vida (PDF)
-                    </button>
+                    <Button variant="ghost" size="sm" onClick={() => resumeInputRef.current?.click()}>
+                      <Upload className="h-3.5 w-3.5" />
+                      Subir HV
+                    </Button>
                   )}
-                  <input
-                    ref={resumeInputRef}
-                    type="file"
-                    accept=".pdf,.doc,.docx"
-                    className="hidden"
-                    onChange={(e) => { const f = e.target.files?.[0]; if (f) handleResumeUpload(f); }}
-                  />
+                  <input ref={resumeInputRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) handleResumeUpload(file); }} />
                 </div>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Select value={draft.supportLabel} onChange={(event) => updateField("supportLabel", event.target.value)}>
-                  <option value="Líder">Líder</option>
-                  <option value="Voluntario">Voluntario</option>
-                  <option value="Simpatizante">Simpatizante</option>
-                  <option value="Votante">Votante</option>
-                </Select>
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={draft.supportScore}
-                  onChange={(event) => updateField("supportScore", Number(event.target.value) as PersonRecord["supportScore"])}
-                  placeholder="Score de apoyo"
-                />
-              </div>
-              <Input
-                value={draft.tags.join(", ")}
-                onChange={(event) => updateField("tags", event.target.value.split(",").map((tag) => tag.trim()).filter(Boolean))}
-                placeholder="Etiquetas separadas por coma"
-              />
-              <Textarea value={draft.notes} onChange={(event) => updateField("notes", event.target.value)} placeholder="Observaciones" />
-              <div className="grid gap-4 md:grid-cols-2">
-                <Select value={draft.visibilityScope} onChange={(event) => updateField("visibilityScope", event.target.value as PersonRecord["visibilityScope"])}>
-                  <option value="public">Público</option>
-                  <option value="operational">Operativo</option>
-                  <option value="legal">Legal</option>
-                  <option value="restricted">Restringido</option>
-                </Select>
-                <div className="rounded-2xl border border-white/20 bg-white/[0.10] px-4 py-3 text-sm text-white/78">
-                  <p className="text-xs uppercase tracking-[0.24em] text-white/58">Estado del registro</p>
-                  <p className="mt-1 text-white">Listo para persistir en PostgreSQL con RLS</p>
-                </div>
-              </div>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-white/72">La edición ya funciona localmente y luego se conectará a Supabase Storage y PostgreSQL.</p>
-                <Button variant="gold" onClick={handleSave}>
-                  Guardar cambios
-                </Button>
               </div>
             </div>
-          </div>
+
+            {selectedIsLeader && (
+              <div className="rounded-2xl border border-brand-gold/25 bg-brand-gold/10 px-4 py-3 text-sm text-brand-ink/75">
+                <UserCheck className="mr-2 inline h-4 w-4 text-brand-gold" />
+                Este líder tiene {people.filter((person) => person.leaderDocumentNumber === draft.documentNumber).length} persona(s) a cargo.
+              </div>
+            )}
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-brand-ink/62">Los cambios de producción se guardarán contra Supabase según rol y permisos.</p>
+              <Button variant="gold" onClick={handleSave} disabled={saving}>
+                {saving ? "Guardando..." : "Guardar cambios"}
+              </Button>
+            </div>
+          </CardContent>
         </Card>
       </div>
 
-      {viewerUrl && (
-        <ResumeViewer
-          url={viewerUrl}
-          name={viewerName}
-          onClose={() => setViewerUrl(null)}
-        />
-      )}
+      {viewerUrl && <ResumeViewer url={viewerUrl} name={viewerName} onClose={() => setViewerUrl(null)} />}
     </div>
   );
 }

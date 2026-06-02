@@ -74,6 +74,8 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
   const neighborhoodCache = new Map<string, string>();
   const votingCenterCache = new Map<string, string>();
   const votingTableCache = new Map<string, string>();
+  const personIdsByDocument = new Map<string, string>();
+  const leaderIdsByDocument = new Map<string, string>();
   const result: ImportResult = {
     territoryRows: 0,
     peopleRows: 0,
@@ -359,6 +361,8 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
 
   async function findLeaderId(documentNumber: string) {
     if (!documentNumber) return null;
+    const cached = leaderIdsByDocument.get(documentNumber);
+    if (cached) return cached;
 
     const { data: person, error: personError } = await client
       .from("people")
@@ -376,6 +380,7 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
 
     if (leaderError) return null;
 
+    if (leader?.id) leaderIdsByDocument.set(documentNumber, leader.id);
     return leader?.id ?? null;
   }
 
@@ -386,7 +391,6 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
 
   for (const row of parsed.peopleRows) {
     const territory = await ensureTerritory(territoryRowFromPerson(row));
-    const leaderId = await findLeaderId(row.leaderDocumentNumber);
 
     const personId = await singleId(
       client
@@ -394,7 +398,6 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
         .upsert(
           {
             kind: personKindFromSupportLabel(row.supportLabel),
-            leader_id: leaderId,
             first_name: row.firstName,
             last_name: row.lastName,
             document_number: row.documentNumber,
@@ -425,15 +428,16 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
         .single(),
       `No se pudo cargar la persona con cédula ${row.documentNumber}`
     );
+    personIdsByDocument.set(row.documentNumber, personId);
 
     if (personKindFromSupportLabel(row.supportLabel) === "leader") {
-      await singleId(
+      const leaderId = await singleId(
         client
           .from("leaders")
           .upsert(
             {
               person_id: personId,
-              title: "Líder",
+              title: row.leaderSector ? `Líder ${row.leaderSector}` : "Líder",
               influence_score: row.supportScore,
               active: true
             },
@@ -443,6 +447,7 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
           .single(),
         `No se pudo crear el liderazgo para ${row.documentNumber}`
       );
+      leaderIdsByDocument.set(row.documentNumber, leaderId);
       result.leadersRows += 1;
     }
 
@@ -453,6 +458,24 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
     }
 
     result.peopleRows += 1;
+  }
+
+  for (const row of parsed.peopleRows) {
+    if (!row.leaderDocumentNumber) continue;
+
+    const personId = personIdsByDocument.get(row.documentNumber);
+    const leaderId = await findLeaderId(row.leaderDocumentNumber);
+
+    if (!personId || !leaderId) continue;
+
+    const { error } = await client
+      .from("people")
+      .update({ leader_id: leaderId })
+      .eq("id", personId);
+
+    if (error) {
+      throw new Error(`No se pudo asignar el líder ${row.leaderDocumentNumber} a ${row.documentNumber}: ${error.message}`);
+    }
   }
 
   for (const row of parsed.importantDateRows) {

@@ -4,7 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
-import { useDemoSession } from "@/components/providers/demo-session-provider";
+import { useSession } from "@/components/providers/session-provider";
 
 type DashboardShellProps = {
   children: ReactNode;
@@ -12,7 +12,7 @@ type DashboardShellProps = {
 
 export function DashboardShell({ children }: DashboardShellProps) {
   const router = useRouter();
-  const { ready, authenticated } = useDemoSession();
+  const { ready, authenticated } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {

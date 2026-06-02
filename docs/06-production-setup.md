@@ -1,6 +1,6 @@
 # Puesta en producción
 
-Esta guía deja el orden recomendado para pasar la demo local a producción con Supabase, GitHub y Cloudflare.
+Esta guía deja el orden recomendado para pasar el entorno operativo a producción con Supabase, GitHub y Cloudflare.
 
 ## 1. Variables
 
@@ -48,15 +48,35 @@ El primer usuario se crea manualmente porque todavía no existe un admin que pue
 3. En SQL Editor ejecuta:
 
 ```sql
-insert into public.profiles (id, email, full_name, role, status)
-select id, email, 'Administración General', 'admin_principal', 'active'
+insert into public.profiles (
+  id,
+  email,
+  username,
+  full_name,
+  role,
+  status,
+  territory,
+  can_manage_alerts
+)
+select
+  id,
+  email,
+  'admin',
+  'Administración General',
+  'admin_principal',
+  'active',
+  'Todo el territorio',
+  true
 from auth.users
 where email = 'admin@drjahir.com'
 on conflict (id) do update
 set email = excluded.email,
+    username = excluded.username,
     full_name = excluded.full_name,
     role = excluded.role,
-    status = excluded.status;
+    status = excluded.status,
+    territory = excluded.territory,
+    can_manage_alerts = excluded.can_manage_alerts;
 ```
 
 Luego los demás usuarios se pueden crear desde el módulo `Administración` o desde la ruta `POST /api/admin/users` cuando el login real de Supabase esté activo.

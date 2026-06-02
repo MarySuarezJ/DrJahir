@@ -1,6 +1,6 @@
 # Jahir Alvarez CRM Político
 
-Plataforma preliminar local para gestión política, territorial y electoral con una base lista para crecer a producción real.
+Plataforma operativa para gestión política, territorial y electoral con una base lista para producción.
 
 ## Stack base
 
@@ -12,7 +12,7 @@ Plataforma preliminar local para gestión política, territorial y electoral con
 
 ## Estado inicial
 
-Este repositorio arranca como una demo local funcional con:
+Este repositorio arranca como un entorno operativo funcional con:
 
 - arquitectura documentada,
 - modelo relacional PostgreSQL,
@@ -34,10 +34,12 @@ Este repositorio arranca como una demo local funcional con:
 
 La dirección visual toma como base el logo provisto por el usuario y ahora usa una paleta clara con blanco, beige, dorado suave, verde institucional y azul sobrio para una experiencia más limpia y administrativa.
 
-## Accesos demo
+## Accesos temporales de revisión
+
+Cuando Supabase Auth no está configurado, la aplicación permite revisar la interfaz con estos accesos locales:
 
 - `admin` / `admin2024` para Administración General.
 - `doctor` / `jahir2024` para Dr. Jahir Álvarez.
-- `secretaria` / `sec2024`.
+- `secretaria` / `sec2024` para Yuli Paulina.
 - `abogado` / `legal2024`.
 - `coordinador` / `terr2024`.

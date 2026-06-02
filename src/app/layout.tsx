@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { Manrope, Space_Grotesk } from "next/font/google";
 import "leaflet/dist/leaflet.css";
 import "./globals.css";
-import { DemoSessionProvider } from "@/components/providers/demo-session-provider";
+import { SessionProvider } from "@/components/providers/session-provider";
 
 const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope", display: "swap" });
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-space-grotesk", display: "swap" });
@@ -21,7 +21,7 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body className={`${manrope.variable} ${spaceGrotesk.variable} app-light bg-brand-cream text-brand-ink antialiased`}>
-        <DemoSessionProvider>{children}</DemoSessionProvider>
+        <SessionProvider>{children}</SessionProvider>
       </body>
     </html>
   );

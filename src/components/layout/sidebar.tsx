@@ -7,7 +7,7 @@ import { BrandMark } from "@/components/brand/brand-mark";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { getNavigationForRole } from "@/lib/permissions";
-import { useDemoSession } from "@/components/providers/demo-session-provider";
+import { useSession } from "@/components/providers/session-provider";
 import { cn } from "@/lib/utils";
 
 type SidebarProps = {
@@ -17,7 +17,7 @@ type SidebarProps = {
 
 export function Sidebar({ open = true, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const { role } = useDemoSession();
+  const { role } = useSession();
   const navigation = useMemo(() => getNavigationForRole(role), [role]);
 
   return (
@@ -32,9 +32,9 @@ export function Sidebar({ open = true, onClose }: SidebarProps) {
 
         <Card className="border-brand-line bg-brand-cream/80 p-4">
           <div className="space-y-3">
-            <Badge variant="gold">Demo local</Badge>
-            <p className="text-sm leading-6 text-white/85">
-              CRM político inteligente listo para crecer hacia Supabase, analítica avanzada y automatización territorial.
+            <Badge variant="gold">Operación territorial</Badge>
+            <p className="text-sm leading-6 text-brand-ink/72">
+              Seguimiento de líderes, personas movilizadas, territorios, alertas y resultados por perfil.
             </p>
           </div>
         </Card>
@@ -61,7 +61,7 @@ export function Sidebar({ open = true, onClose }: SidebarProps) {
                 </span>
                 <span className="min-w-0">
                   <span className="block text-sm font-semibold">{item.label}</span>
-                  <span className="block truncate text-xs text-white/65">{item.description}</span>
+                  <span className="block truncate text-xs text-brand-ink/58">{item.description}</span>
                 </span>
               </Link>
             );

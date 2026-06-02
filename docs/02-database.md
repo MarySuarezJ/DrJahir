@@ -63,18 +63,21 @@ Se propone un diseño PostgreSQL normalizado con entidades geográficas, persona
 Perfil de aplicación vinculado a `auth.users`.
 
 Campos: `id`, `full_name`, `role`, `status`, `avatar_url`, `created_at`, `updated_at`.
+Campos operativos adicionales: `email`, `username`, `territory`, `can_manage_alerts`, `dashboard_preferences`.
 
 ### people
 
 Entidad central del CRM.
 
 Campos: `id`, `document_number`, `first_name`, `last_name`, `phone`, `whatsapp`, `email`, `address`, `profession`, `company`, `job_title`, `employment_status`, `voting_place`, `voting_table`, `leader_id`, `photo_path`, `resume_path`, `notes`, `visibility_scope`, `created_at`, `updated_at`.
+La relación `leader_id` permite saber qué líder mueve o acompaña a cada persona.
 
 ### leaders
 
 Núcleo jerárquico político.
 
 Campos: `id`, `person_id`, `parent_leader_id`, `leader_level`, `territorial_scope`, `influence_score`, `active`.
+El título del líder puede guardar el sector visible, por ejemplo `Líder Bajo Tablazo`.
 
 ### person_documents
 

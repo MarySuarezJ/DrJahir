@@ -56,6 +56,8 @@ Columnas principales:
 - `nombres`
 - `apellidos`
 - `cedula`
+- `tipo_registro`
+- `sector_lider`
 - `telefono`
 - `whatsapp`
 - `correo`
@@ -79,9 +81,17 @@ Columnas principales:
 
 Valores aceptados:
 
+- `tipo_registro`: `Lider` o `Persona`
+- `sector_lider`: sector que lidera esa persona, por ejemplo `Bajo Tablazo`
+- `lider_cedula`: cédula del líder responsable. Para una persona a cargo de Mariana Suárez, aquí va la cédula de Mariana.
 - `estado_laboral`: `empleado`, `desempleado`, `independiente`, `estudiante`, `pensionado`
 - `etiqueta_apoyo`: `Lider`, `Voluntario`, `Simpatizante`, `Votante`
 - `visibilidad`: `public`, `operational`, `legal`, `restricted`
+
+Ejemplo de jerarquía:
+
+- Fila líder: `Mariana | Suarez | 1053978521 | Lider | Bajo Tablazo | ...`
+- Fila persona a cargo: `Laura | Gomez | 1002458891 | Persona | | ... | lider_cedula = 1053978521`
 
 ### Fechas importantes
 

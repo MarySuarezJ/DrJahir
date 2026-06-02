@@ -1,4 +1,4 @@
-export const appRoles = ["admin_principal", "secretaria", "abogado", "coordinador_territorial"] as const;
+export const appRoles = ["admin_principal", "doctor", "secretaria", "abogado", "coordinador_territorial"] as const;
 
 export type AppRole = (typeof appRoles)[number];
 
@@ -11,8 +11,8 @@ export type RoleCredential = {
 
 export const roleCredentials: RoleCredential[] = [
   { role: "admin_principal",         username: "admin",        password: "admin2024",  displayName: "Administración General" },
-  { role: "admin_principal",         username: "doctor",       password: "jahir2024",  displayName: "Dr. Jahir Álvarez" },
-  { role: "secretaria",              username: "secretaria",   password: "sec2024",    displayName: "Laura Gómez" },
+  { role: "doctor",                  username: "doctor",       password: "jahir2024",  displayName: "Dr. Jahir Álvarez" },
+  { role: "secretaria",              username: "secretaria",   password: "sec2024",    displayName: "Yuli Paulina" },
   { role: "abogado",                 username: "abogado",      password: "legal2024",  displayName: "Carlos Ríos" },
   { role: "coordinador_territorial", username: "coordinador",  password: "terr2024",   displayName: "Pedro Muñoz" }
 ];
@@ -32,6 +32,13 @@ export const roleMeta: RoleMeta[] = [
     shortLabel: "Admin",
     description: "Acceso total al sistema, territorios, usuarios y automatizaciones.",
     accent: "gold"
+  },
+  {
+    value: "doctor",
+    label: "Doctor Jahir",
+    shortLabel: "Doctor",
+    description: "Vista ejecutiva para seguimiento estratégico, mapa, líderes y resultados.",
+    accent: "navy"
   },
   {
     value: "secretaria",

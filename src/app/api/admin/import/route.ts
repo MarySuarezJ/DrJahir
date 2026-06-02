@@ -15,7 +15,7 @@ const importRequestSchema = z.object({
 });
 
 async function getAdminActor(request: Request) {
-  if (process.env.NODE_ENV !== "production" && request.headers.get("x-demo-role") === "admin_principal") {
+  if (process.env.NODE_ENV !== "production" && request.headers.get("x-local-role") === "admin_principal") {
     return { userId: null };
   }
 

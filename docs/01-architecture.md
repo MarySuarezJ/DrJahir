@@ -20,7 +20,7 @@ Next.js con App Router, componentes visuales, layout responsivo y páginas por m
 
 ### 2. Capa de experiencia
 
-Componentes reutilizables, estado de demo local, navegación protegida por rol y componentes animados con Framer Motion.
+Componentes reutilizables, estado de sesión, navegación protegida por rol y componentes animados con Framer Motion.
 
 ### 3. Dominio
 
@@ -70,7 +70,7 @@ docs/
 ## Flujo de ejecución
 
 1. El usuario entra al login premium.
-2. Selecciona su rol o accede con credenciales Supabase cuando se active producción.
+2. Accede con credenciales Supabase o con acceso temporal local mientras se revisa la interfaz.
 3. El sistema carga una vista personalizada según permisos.
 4. El dashboard consolida métricas, gráficos y mapa territorial.
 5. Los módulos operativos gestionan personas, líderes, documentos, automatizaciones y formularios.

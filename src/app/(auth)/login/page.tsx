@@ -22,8 +22,8 @@ export default function LoginPage() {
             <h1 className="max-w-full break-words font-display text-4xl font-semibold leading-tight text-brand-ink sm:text-6xl sm:leading-[0.95] xl:text-7xl">
               Control territorial, analítica y gestión política en una sola plataforma.
             </h1>
-            <p className="max-w-full break-words text-base leading-7 text-white/80 sm:max-w-2xl sm:text-lg">
-              Una demo local de alto nivel para presentar liderazgo, coordinación barrial, automatización y control de campañas con estética corporativa y visión de producción.
+            <p className="max-w-full break-words text-base leading-7 text-brand-ink/72 sm:max-w-2xl sm:text-lg">
+              Plataforma operativa para seguimiento de líderes, personas movilizadas, territorios, alertas, documentos y comunicación segmentada.
             </p>
           </div>
 
@@ -38,8 +38,8 @@ export default function LoginPage() {
                       <Icon className="h-5 w-5" />
                     </span>
                     <div>
-                      <p className="font-semibold text-white">{item.title}</p>
-                      <p className="mt-2 text-sm leading-6 text-white/75">{item.detail}</p>
+                      <p className="font-semibold text-brand-ink">{item.title}</p>
+                      <p className="mt-2 text-sm leading-6 text-brand-ink/70">{item.detail}</p>
                     </div>
                   </div>
                 </Card>

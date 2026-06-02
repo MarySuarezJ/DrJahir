@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { BellRing, CalendarPlus, ShieldCheck, Trash2, UserPlus, UsersRound } from "lucide-react";
+import { BellRing, CalendarPlus, ShieldCheck, SlidersHorizontal, Trash2, UserPlus, UsersRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -10,14 +10,16 @@ import { Select } from "@/components/ui/select";
 import { StatCard } from "@/components/ui/stat-card";
 import { Textarea } from "@/components/ui/textarea";
 import { ExcelImportPanel } from "@/components/admin/excel-import-panel";
-import { useDemoSession } from "@/components/providers/demo-session-provider";
+import { useSession } from "@/components/providers/session-provider";
+import { navigationItems } from "@/lib/data/navigation";
+import { hasSupabaseBrowserConfig } from "@/lib/supabase/client";
 import {
   adminUsersSeed,
   importantAlertsSeed,
   type AdminUser,
   type AdminUserStatus,
   type ImportantAlert,
-  type ImportantAlertStatus
+type ImportantAlertStatus
 } from "@/lib/data/admin";
 import { appRoles, roleMeta, type AppRole } from "@/lib/types/roles";
 
@@ -73,22 +75,47 @@ function getRoleLabel(role: AppRole) {
 }
 
 export function AdminWorkspace() {
-  const { role, displayName } = useDemoSession();
+  const { role, displayName } = useSession();
   const [hydrated, setHydrated] = useState(false);
   const [users, setUsers] = useState<AdminUser[]>(adminUsersSeed);
   const [alerts, setAlerts] = useState<ImportantAlert[]>(importantAlertsSeed);
   const [userForm, setUserForm] = useState(emptyUser());
+  const [userPassword, setUserPassword] = useState("");
   const [alertForm, setAlertForm] = useState(emptyAlert());
+  const [userError, setUserError] = useState("");
 
   useEffect(() => {
-    setUsers(parseStoredList(window.localStorage.getItem(usersStorageKey), adminUsersSeed));
     setAlerts(parseStoredList(window.localStorage.getItem(alertsStorageKey), importantAlertsSeed));
-    setHydrated(true);
+
+    if (!hasSupabaseBrowserConfig()) {
+      setUsers(parseStoredList(window.localStorage.getItem(usersStorageKey), adminUsersSeed));
+      setHydrated(true);
+      return;
+    }
+
+    void (async () => {
+      try {
+        const response = await fetch("/api/admin/users");
+        const data = (await response.json()) as { users?: AdminUser[]; error?: string };
+
+        if (!response.ok || !Array.isArray(data.users)) {
+          setUserError(data.error ?? "No se pudieron cargar usuarios desde Supabase.");
+          setUsers(adminUsersSeed);
+          return;
+        }
+
+        setUsers(data.users);
+      } finally {
+        setHydrated(true);
+      }
+    })();
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    window.localStorage.setItem(usersStorageKey, JSON.stringify(users));
+    if (!hasSupabaseBrowserConfig()) {
+      window.localStorage.setItem(usersStorageKey, JSON.stringify(users));
+    }
     window.localStorage.setItem(alertsStorageKey, JSON.stringify(alerts));
   }, [alerts, hydrated, users]);
 
@@ -102,8 +129,46 @@ export function AdminWorkspace() {
     [alerts, users]
   );
 
-  function createUser() {
+  async function createUser() {
     if (!userForm.fullName.trim() || !userForm.username.trim() || !userForm.email.trim()) return;
+    setUserError("");
+
+    if (hasSupabaseBrowserConfig()) {
+      if (userPassword.length < 8) {
+        setUserError("La contraseña debe tener mínimo 8 caracteres.");
+        return;
+      }
+
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: userForm.email.trim().toLowerCase(),
+          password: userPassword,
+          fullName: userForm.fullName.trim(),
+          username: userForm.username.trim().toLowerCase(),
+          role: userForm.role,
+          status: userForm.status,
+          territory: userForm.territory,
+          canManageAlerts: userForm.canManageAlerts
+        })
+      });
+      const data = (await response.json()) as { error?: string; user?: AdminUser };
+
+      if (!response.ok || !data.user) {
+        setUserError(data.error ?? "No se pudo crear el usuario en Supabase.");
+        return;
+      }
+
+      const createdUser = data.user;
+      setUsers((current) => [
+        createdUser,
+        ...current
+      ]);
+      setUserForm(emptyUser());
+      setUserPassword("");
+      return;
+    }
 
     setUsers((current) => [
       {
@@ -118,13 +183,52 @@ export function AdminWorkspace() {
       ...current
     ]);
     setUserForm(emptyUser());
+    setUserPassword("");
   }
 
-  function updateUser(id: string, patch: Partial<AdminUser>) {
+  async function updateUser(id: string, patch: Partial<AdminUser>) {
+    setUserError("");
+
+    if (hasSupabaseBrowserConfig()) {
+      const response = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          role: patch.role,
+          status: patch.status,
+          territory: patch.territory,
+          canManageAlerts: patch.canManageAlerts
+        })
+      });
+      const data = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        setUserError(data.error ?? "No se pudo actualizar el usuario.");
+        return;
+      }
+    }
+
     setUsers((current) => current.map((user) => (user.id === id ? { ...user, ...patch } : user)));
   }
 
-  function deleteUser(id: string) {
+  async function deleteUser(id: string) {
+    setUserError("");
+
+    if (hasSupabaseBrowserConfig()) {
+      const response = await fetch("/api/admin/users", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id })
+      });
+      const data = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        setUserError(data.error ?? "No se pudo eliminar el usuario.");
+        return;
+      }
+    }
+
     setUsers((current) => current.filter((user) => user.id !== id));
   }
 
@@ -173,6 +277,46 @@ export function AdminWorkspace() {
 
       <ExcelImportPanel role={role} />
 
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <SlidersHorizontal className="h-5 w-5 text-brand-navy" />
+            <div>
+              <p className="text-xs uppercase tracking-[0.28em] text-brand-muted">Roles y permisos</p>
+              <h3 className="mt-1 font-display text-2xl font-semibold text-brand-ink">Qué puede ver y hacer cada perfil</h3>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="grid gap-4 lg:grid-cols-3">
+          {roleMeta.map((item) => {
+            const modules = navigationItems.filter((nav) => nav.roles.includes(item.value)).map((nav) => nav.label);
+            const alertAccess = item.value === "admin_principal" || item.value === "secretaria";
+
+            return (
+              <div key={item.value} className="rounded-2xl border border-brand-line bg-white/72 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-brand-ink">{item.label}</p>
+                    <p className="mt-1 text-sm leading-6 text-brand-ink/62">{item.description}</p>
+                  </div>
+                  <Badge variant={item.value === "admin_principal" ? "gold" : item.value === "secretaria" ? "emerald" : "neutral"}>{item.shortLabel}</Badge>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {modules.map((module) => (
+                    <Badge key={module} variant="neutral" className="tracking-normal normal-case">
+                      {module}
+                    </Badge>
+                  ))}
+                </div>
+                <p className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-brand-muted">
+                  {alertAccess ? "Puede crear alertas y mensajes" : "Sin permisos de alertas"}
+                </p>
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+
       <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <Card>
           <CardHeader>
@@ -189,6 +333,7 @@ export function AdminWorkspace() {
               <Input value={userForm.fullName} onChange={(event) => setUserForm({ ...userForm, fullName: event.target.value })} placeholder="Nombre completo" />
               <Input value={userForm.username} onChange={(event) => setUserForm({ ...userForm, username: event.target.value })} placeholder="Usuario de acceso" />
               <Input type="email" value={userForm.email} onChange={(event) => setUserForm({ ...userForm, email: event.target.value })} placeholder="Correo" />
+              <Input type="password" value={userPassword} onChange={(event) => setUserPassword(event.target.value)} placeholder="Contraseña inicial" />
               <Input value={userForm.territory} onChange={(event) => setUserForm({ ...userForm, territory: event.target.value })} placeholder="Territorio o alcance" />
               <Select value={userForm.role} onChange={(event) => setUserForm({ ...userForm, role: event.target.value as AppRole })}>
                 {appRoles.map((item) => (
@@ -217,6 +362,7 @@ export function AdminWorkspace() {
               <UserPlus className="h-4 w-4" />
               Crear usuario
             </Button>
+            {userError && <p className="text-sm text-rose-700">{userError}</p>}
           </CardContent>
         </Card>
 
@@ -273,14 +419,14 @@ export function AdminWorkspace() {
                   @{user.username} · {user.email} · {user.lastAccess}
                 </p>
               </div>
-              <Select value={user.role} onChange={(event) => updateUser(user.id, { role: event.target.value as AppRole })}>
+              <Select value={user.role} onChange={(event) => void updateUser(user.id, { role: event.target.value as AppRole })}>
                 {appRoles.map((item) => (
                   <option key={item} value={item}>
                     {getRoleLabel(item)}
                   </option>
                 ))}
               </Select>
-              <Select value={user.status} onChange={(event) => updateUser(user.id, { status: event.target.value as AdminUserStatus })}>
+              <Select value={user.status} onChange={(event) => void updateUser(user.id, { status: event.target.value as AdminUserStatus })}>
                 <option value="active">Activo</option>
                 <option value="paused">Pausado</option>
               </Select>
@@ -289,14 +435,14 @@ export function AdminWorkspace() {
                   <input
                     type="checkbox"
                     checked={user.canManageAlerts}
-                    onChange={(event) => updateUser(user.id, { canManageAlerts: event.target.checked })}
+                    onChange={(event) => void updateUser(user.id, { canManageAlerts: event.target.checked })}
                     className="h-4 w-4 accent-brand-gold"
                   />
                   Alertas
                 </label>
                 <button
                   type="button"
-                  onClick={() => deleteUser(user.id)}
+                  onClick={() => void deleteUser(user.id)}
                   disabled={user.id === "usr-admin"}
                   className="rounded-xl p-2 text-brand-muted transition hover:bg-rose-50 hover:text-rose-700 disabled:pointer-events-none disabled:opacity-35"
                 >

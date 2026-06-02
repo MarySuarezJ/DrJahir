@@ -131,7 +131,7 @@ export function ExcelImportPanel({ role }: { role: AppRole }) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-demo-role": role
+        "x-local-role": role
       },
       body: JSON.stringify(preview.payload)
     });

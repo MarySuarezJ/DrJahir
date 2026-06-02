@@ -106,7 +106,7 @@ export default function DocumentsPage() {
                 <FileUp className="h-6 w-6" />
               </span>
               <p className="mt-4 font-semibold text-white">Suelta archivos aquí o haz clic</p>
-              <p className="mt-1 text-sm text-white/65">PDF, JPG, PNG, DOCX — sin límite en modo demo</p>
+              <p className="mt-1 text-sm text-white/65">PDF, JPG, PNG, DOCX según la configuración de Supabase Storage</p>
               <Button variant="gold" size="sm" className="mt-5" onClick={(e) => { e.stopPropagation(); inputRef.current?.click(); }}>
                 Seleccionar archivos
               </Button>

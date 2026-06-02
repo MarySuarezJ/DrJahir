@@ -52,6 +52,7 @@ export type ParsedPersonRow = {
   votingCenter: string;
   votingTable: string;
   leaderDocumentNumber: string;
+  leaderSector: string;
   supportLabel: string;
   supportScore: number;
   tags: string[];
@@ -116,6 +117,9 @@ const aliases = {
   jobTitle: ["cargo", "job_title", "puesto_trabajo"],
   employmentStatus: ["estado_laboral", "employment_status"],
   leaderDocumentNumber: ["lider_cedula", "cedula_lider", "lider_documento"],
+  leaderSector: ["sector_lider", "territorio_lider", "zona_lider", "lider_sector"],
+  recordType: ["tipo_registro", "tipo", "record_type"],
+  isLeader: ["es_lider", "lider", "is_leader"],
   supportLabel: ["etiqueta_apoyo", "support_label", "tipo_apoyo"],
   supportScore: ["puntaje_apoyo", "support_score"],
   tags: ["etiquetas", "tags"],
@@ -209,6 +213,19 @@ function normalizeEmploymentStatus(value: unknown): ParsedPersonRow["employmentS
   if (clean.includes("pension")) return "pensionado";
 
   return "empleado";
+}
+
+function normalizeSupportLabel(row: ImportRow) {
+  const explicit = text(readCell(row, "supportLabel"));
+  const recordType = normalizeImportKey(text(readCell(row, "recordType")));
+  const isLeader = normalizeImportKey(text(readCell(row, "isLeader")));
+
+  if (explicit) return explicit;
+  if (recordType.includes("lider") || ["si", "s", "true", "1", "yes"].includes(isLeader)) return "Líder";
+  if (recordType.includes("volunt")) return "Voluntario";
+  if (recordType.includes("vot")) return "Votante";
+
+  return "Simpatizante";
 }
 
 function normalizeVisibility(value: unknown): ParsedPersonRow["visibilityScope"] {
@@ -329,6 +346,7 @@ export function parseImportPayload(payload: ImportPayload): ParsedImport {
     }
 
     const supportScore = numberOrNull(readCell(row, "supportScore"));
+    const supportLabel = normalizeSupportLabel(row);
 
     return [
       {
@@ -351,7 +369,8 @@ export function parseImportPayload(payload: ImportPayload): ParsedImport {
         votingCenter: text(readCell(row, "votingCenter")),
         votingTable: text(readCell(row, "votingTable")),
         leaderDocumentNumber: text(readCell(row, "leaderDocumentNumber")),
-        supportLabel: text(readCell(row, "supportLabel")) || "Simpatizante",
+        leaderSector: text(readCell(row, "leaderSector")),
+        supportLabel,
         supportScore: clamp(supportScore ?? 0, 0, 100),
         tags: parseTags(readCell(row, "tags")),
         visibilityScope: normalizeVisibility(readCell(row, "visibilityScope")),

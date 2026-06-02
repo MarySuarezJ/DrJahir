@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { AppRole } from "@/lib/types/roles";
 
-type DemoSession = {
+type SessionState = {
   ready: boolean;
   authenticated: boolean;
   role: AppRole;
@@ -13,17 +13,17 @@ type DemoSession = {
   logout: () => void;
 };
 
-const storageRoleKey = "jahir-demo-role";
-const storageUserKey = "jahir-demo-user";
-const storageAuthKey = "jahir-demo-auth";
+const storageRoleKey = "jahir-session-role";
+const storageUserKey = "jahir-session-user";
+const storageAuthKey = "jahir-session-auth";
 
-const DemoSessionContext = createContext<DemoSession | null>(null);
+const SessionContext = createContext<SessionState | null>(null);
 
-export function DemoSessionProvider({ children }: { children: ReactNode }) {
+export function SessionProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
   const [role, setRoleState] = useState<AppRole>("admin_principal");
-  const [displayName, setDisplayName] = useState("Jahir Alvarez");
+  const [displayName, setDisplayName] = useState("Usuario");
 
   useEffect(() => {
     const storedRole = window.localStorage.getItem(storageRoleKey) as AppRole | null;
@@ -42,7 +42,7 @@ export function DemoSessionProvider({ children }: { children: ReactNode }) {
     setReady(true);
   }, []);
 
-  const value = useMemo<DemoSession>(
+  const value = useMemo<SessionState>(
     () => ({
       ready,
       authenticated,
@@ -70,14 +70,14 @@ export function DemoSessionProvider({ children }: { children: ReactNode }) {
     [authenticated, displayName, ready, role]
   );
 
-  return <DemoSessionContext.Provider value={value}>{children}</DemoSessionContext.Provider>;
+  return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
 
-export function useDemoSession() {
-  const context = useContext(DemoSessionContext);
+export function useSession() {
+  const context = useContext(SessionContext);
 
   if (!context) {
-    throw new Error("useDemoSession must be used within DemoSessionProvider");
+    throw new Error("useSession must be used within SessionProvider");
   }
 
   return context;
