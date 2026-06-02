@@ -292,11 +292,11 @@ export function PublicIntakeForm({ mode = "public" }: PublicIntakeFormProps) {
   }
 
   return (
-    <Card className="border-brand-line bg-white/82">
+    <Card className="border-brand-emerald/24 bg-white/88">
       <div className="p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.28em] text-brand-muted">Registro público</p>
+            <p className="text-xs uppercase tracking-[0.28em] text-brand-muted">{isDirectMode ? "Registro CRM" : "Registro público"}</p>
             <h3 className="mt-2 font-display text-2xl font-semibold text-brand-ink">Datos personales y participación</h3>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-brand-ink/68">
               {isDirectMode
@@ -416,7 +416,7 @@ export function PublicIntakeForm({ mode = "public" }: PublicIntakeFormProps) {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-brand-line bg-brand-cream/70 p-4">
+            <div className="rounded-2xl border border-brand-emerald/20 bg-brand-beige/70 p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
                   <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-brand-line bg-white text-brand-ink">
@@ -438,7 +438,7 @@ export function PublicIntakeForm({ mode = "public" }: PublicIntakeFormProps) {
                       Quitar
                     </button>
                   )}
-                  <label className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-full border border-brand-line bg-white px-4 text-sm font-semibold text-brand-ink transition hover:bg-brand-cream">
+                  <label className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-full border border-brand-emerald/24 bg-white px-4 text-sm font-semibold text-brand-ink transition hover:bg-brand-beige">
                     <Upload className="h-4 w-4" />
                     Seleccionar
                     <input
@@ -477,7 +477,7 @@ export function PublicIntakeForm({ mode = "public" }: PublicIntakeFormProps) {
               {isDirectMode ? "Se guarda directo en Personas, con hoja de vida opcional." : "Se guarda como registro pendiente para revisión administrativa."}
             </p>
             <Button variant="gold" type="submit" disabled={submitting}>
-              {submitting ? "Guardando..." : "Enviar registro"}
+              {submitting ? "Guardando..." : isDirectMode ? "Guardar persona" : "Enviar registro"}
             </Button>
           </div>
         </form>

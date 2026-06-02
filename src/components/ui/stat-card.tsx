@@ -13,10 +13,10 @@ type StatCardProps = {
 };
 
 const toneClasses = {
-  gold: "from-brand-gold/18 to-white border-brand-gold/25",
-  emerald: "from-brand-emerald/14 to-white border-brand-emerald/25",
-  navy: "from-brand-navy/12 to-white border-brand-navy/20",
-  neutral: "from-brand-beige/70 to-white border-brand-line"
+  gold: "from-brand-gold/20 via-white to-brand-cream border-brand-gold/25",
+  emerald: "from-brand-emerald/22 via-white to-brand-emeraldSoft/28 border-brand-emerald/32",
+  navy: "from-brand-navy/12 via-white to-brand-emeraldSoft/24 border-brand-navy/18",
+  neutral: "from-white via-brand-beige/70 to-brand-cream border-brand-emerald/24"
 };
 
 export function StatCard({ label, value, hint, delta, icon, tone = "neutral" }: StatCardProps) {

@@ -11,22 +11,22 @@ const config: Config = {
           navySoft: "#468189",
           emerald: "#77ACA2",
           emeraldSoft: "#9DBEBB",
-          gold: "#C99C45",
+          gold: "#D6A842",
           goldSoft: "#F4E9CD",
-          cream: "#F4E9CD",
-          beige: "#FFF7E2",
-          sand: "#D8C896",
+          cream: "#F6FBF9",
+          beige: "#EEF6F3",
+          sand: "#D6E7E3",
           ink: "#031926",
-          muted: "#5E706F",
-          line: "#D8C896",
-          glass: "rgba(244,233,205,0.82)",
-          panel: "rgba(255, 247, 226, 0.94)"
+          muted: "#58706C",
+          line: "rgba(70, 129, 137, 0.28)",
+          glass: "rgba(246, 251, 249, 0.86)",
+          panel: "rgba(255, 255, 255, 0.9)"
         }
       },
       boxShadow: {
-        glowGold: "0 0 0 1px rgba(201, 156, 69, 0.2), 0 18px 48px rgba(201, 156, 69, 0.18)",
+        glowGold: "0 0 0 1px rgba(214, 168, 66, 0.22), 0 18px 48px rgba(214, 168, 66, 0.2)",
         glowEmerald: "0 0 0 1px rgba(119, 172, 162, 0.28), 0 18px 48px rgba(70, 129, 137, 0.22)",
-        panel: "0 24px 60px rgba(3, 25, 38, 0.12)"
+        panel: "0 24px 60px rgba(3, 25, 38, 0.1)"
       },
       keyframes: {
         float: {
@@ -49,7 +49,7 @@ const config: Config = {
       },
       backgroundImage: {
         "brand-mesh":
-          "radial-gradient(circle at 18% 18%, rgba(244, 233, 205, 0.72), transparent 28%), radial-gradient(circle at 84% 12%, rgba(119, 172, 162, 0.42), transparent 24%), linear-gradient(135deg, rgba(255, 247, 226, 0.94), rgba(157, 190, 187, 0.28))"
+          "radial-gradient(circle at 18% 18%, rgba(119, 172, 162, 0.34), transparent 28%), radial-gradient(circle at 84% 12%, rgba(70, 129, 137, 0.28), transparent 24%), linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(246, 251, 249, 0.86), rgba(244, 233, 205, 0.36))"
       }
     }
   },

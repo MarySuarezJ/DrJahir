@@ -30,7 +30,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,rgba(255,255,255,0.84),rgba(255,250,240,0.92)),radial-gradient(circle_at_12%_0%,rgba(234,212,162,0.36),transparent_30%),radial-gradient(circle_at_92%_4%,rgba(131,185,156,0.24),transparent_28%)] text-brand-ink">
+    <div className="min-h-screen bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(246,251,249,0.9)),radial-gradient(circle_at_10%_0%,rgba(70,129,137,0.22),transparent_31%),radial-gradient(circle_at_92%_4%,rgba(119,172,162,0.32),transparent_28%),linear-gradient(145deg,rgba(255,255,255,0.92),rgba(238,246,243,0.86),rgba(244,233,205,0.38))] text-brand-ink">
       <div className="flex min-h-screen">
         <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="flex min-w-0 flex-1 flex-col">

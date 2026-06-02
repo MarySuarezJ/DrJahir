@@ -15,7 +15,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
   const currentRole = roleMeta.find((item) => item.value === role);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-brand-line bg-white/86 px-4 py-4 backdrop-blur-2xl sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-30 border-b border-brand-emerald/25 bg-white/90 px-4 py-4 backdrop-blur-2xl sm:px-6 lg:px-8">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" className="xl:hidden" onClick={onMenuClick}>

@@ -56,7 +56,7 @@ function widgetSpan(size: DashboardWidget["size"]) {
 
 function DashboardCard({ eyebrow, title, children }: { eyebrow: string; title: string; children: ReactNode }) {
   return (
-    <Card className="h-full border-brand-line bg-white/78">
+    <Card className="h-full border-brand-emerald/24 bg-white/88">
       <CardHeader>
         <p className="text-xs uppercase tracking-[0.28em] text-brand-muted">{eyebrow}</p>
         <h3 className="mt-2 font-display text-2xl font-semibold text-brand-ink">{title}</h3>
@@ -100,7 +100,7 @@ export default function DashboardPage() {
         <DashboardCard eyebrow="Actividad reciente" title="Últimos movimientos">
           <div className="space-y-4">
             {recentActivity.map((activity) => (
-              <div key={activity.title} className="rounded-2xl border border-brand-line bg-brand-cream/70 p-4">
+              <div key={activity.title} className="rounded-2xl border border-brand-emerald/20 bg-brand-emerald/8 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="font-semibold text-brand-ink">{activity.title}</p>
                   <span className="text-xs text-brand-ink/55">{activity.time}</span>
@@ -153,7 +153,7 @@ export default function DashboardPage() {
           <Link href="/dashboard/people">
             <Button variant="ghost">
               <UsersRound className="h-4 w-4" />
-              Equipo activo
+              Líderes y personas
             </Button>
           </Link>
           <Link href="/dashboard/map">

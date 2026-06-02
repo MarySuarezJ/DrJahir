@@ -41,7 +41,7 @@ function ResumeViewer({ url, name, onClose }: { url: string; name: string; onClo
       <div className="relative flex h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-[24px] border border-brand-line bg-white shadow-2xl">
         <div className="flex shrink-0 items-center justify-between gap-4 border-b border-brand-line px-6 py-4">
           <div className="flex items-center gap-3">
-            <FileText className="h-5 w-5 text-brand-gold" />
+            <FileText className="h-5 w-5 text-brand-emerald" />
             <div>
               <p className="text-xs uppercase tracking-widest text-brand-muted">Documento</p>
               <p className="font-semibold text-brand-ink">{name}</p>
@@ -53,12 +53,12 @@ function ResumeViewer({ url, name, onClose }: { url: string; name: string; onClo
               download
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-1.5 rounded-xl border border-brand-line bg-brand-cream px-3 py-2 text-xs font-semibold text-brand-ink/70 transition hover:bg-brand-beige"
+              className="flex items-center gap-1.5 rounded-xl border border-brand-emerald/24 bg-brand-beige px-3 py-2 text-xs font-semibold text-brand-ink/70 transition hover:bg-brand-emerald/10"
             >
               <Download className="h-3.5 w-3.5" />
               Descargar
             </a>
-            <button onClick={onClose} className="rounded-xl border border-brand-line bg-white p-2 text-brand-muted transition hover:bg-brand-cream hover:text-brand-ink">
+            <button onClick={onClose} className="rounded-xl border border-brand-emerald/24 bg-white p-2 text-brand-muted transition hover:bg-brand-beige hover:text-brand-ink">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -415,7 +415,6 @@ export function PeopleWorkspace({ initialMode = "view" }: PeopleWorkspaceProps =
   }
 
   const selectedIsLeader = isLeader(draft);
-  const isFormLocked = mode === "view";
 
   return (
     <div className="space-y-6">
@@ -460,7 +459,7 @@ export function PeopleWorkspace({ initialMode = "view" }: PeopleWorkspaceProps =
                   }}
                   className={cn(
                     "w-full rounded-2xl border p-4 text-left transition",
-                    active ? "border-brand-gold/45 bg-brand-gold/12 shadow-glowGold" : "border-brand-line bg-white/70 hover:border-brand-gold/35 hover:bg-brand-cream"
+                    active ? "border-brand-emerald/45 bg-brand-emerald/14 shadow-glowEmerald" : "border-brand-line bg-white/76 hover:border-brand-emerald/35 hover:bg-brand-emerald/8"
                   )}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -490,7 +489,7 @@ export function PeopleWorkspace({ initialMode = "view" }: PeopleWorkspaceProps =
 
                 <div className="mt-4 max-h-[360px] space-y-2 overflow-auto pr-1">
                   {assignedPeople.length === 0 ? (
-                    <div className="rounded-2xl border border-brand-line bg-brand-cream/70 px-4 py-6 text-sm text-brand-ink/64">
+                    <div className="rounded-2xl border border-brand-emerald/20 bg-brand-beige/70 px-4 py-6 text-sm text-brand-ink/64">
                       Este líder todavía no tiene personas asignadas.
                     </div>
                   ) : (
@@ -499,7 +498,7 @@ export function PeopleWorkspace({ initialMode = "view" }: PeopleWorkspaceProps =
                         type="button"
                         key={person.id}
                         onClick={() => openSelected(person)}
-                        className="grid w-full gap-2 rounded-2xl border border-brand-line bg-white px-4 py-3 text-left transition hover:border-brand-gold/30 hover:bg-brand-cream sm:grid-cols-[1fr_auto]"
+                        className="grid w-full gap-2 rounded-2xl border border-brand-line bg-white px-4 py-3 text-left transition hover:border-brand-emerald/35 hover:bg-brand-beige sm:grid-cols-[1fr_auto]"
                       >
                         <div>
                           <p className="font-semibold text-brand-ink">{fullName(person)}</p>
@@ -512,7 +511,7 @@ export function PeopleWorkspace({ initialMode = "view" }: PeopleWorkspaceProps =
                 </div>
               </>
             ) : (
-              <div className="rounded-2xl border border-brand-line bg-brand-cream/70 px-4 py-6 text-sm text-brand-ink/64">
+              <div className="rounded-2xl border border-brand-emerald/20 bg-brand-beige/70 px-4 py-6 text-sm text-brand-ink/64">
                 Crea o importa un líder para ver su estructura territorial.
               </div>
             )}
@@ -520,7 +519,7 @@ export function PeopleWorkspace({ initialMode = "view" }: PeopleWorkspaceProps =
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-[1.15fr_0.95fr]">
+      <div className="space-y-6">
         <Card>
           <CardHeader>
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -558,7 +557,7 @@ export function PeopleWorkspace({ initialMode = "view" }: PeopleWorkspaceProps =
                 {filteredPeople.map((person) => {
                   const active = selectedId === person.id;
                   return (
-                    <TableRow key={person.id} onClick={() => openSelected(person)} className={cn("cursor-pointer", active && "bg-brand-gold/10")}>
+                    <TableRow key={person.id} onClick={() => openSelected(person)} className={cn("cursor-pointer", active && "bg-brand-emerald/10")}>
                       <TableCell>
                         <div>
                           <p className="font-semibold text-brand-ink">{fullName(person)}</p>
@@ -604,7 +603,8 @@ export function PeopleWorkspace({ initialMode = "view" }: PeopleWorkspaceProps =
           </CardContent>
         </Card>
 
-        <Card>
+        {mode !== "view" && (
+          <Card>
           <CardHeader>
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -612,12 +612,7 @@ export function PeopleWorkspace({ initialMode = "view" }: PeopleWorkspaceProps =
                 <h3 className="mt-1 font-display text-2xl font-semibold text-brand-ink">{mode === "create" ? "Nuevo registro" : fullName(draft)}</h3>
               </div>
               <div className="flex items-center gap-2">
-                {mode === "view" ? (
-                  <Button variant="ghost" onClick={() => setMode("edit")} disabled={!selectedId}>
-                    <PencilLine className="h-4 w-4" />
-                    Editar
-                  </Button>
-                ) : mode === "edit" ? (
+                {mode === "edit" ? (
                   <Button
                     variant="ghost"
                     onClick={() => {
@@ -635,7 +630,7 @@ export function PeopleWorkspace({ initialMode = "view" }: PeopleWorkspaceProps =
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <fieldset disabled={isFormLocked || saving} className="space-y-4 disabled:opacity-70">
+            <fieldset disabled={saving} className="space-y-4 disabled:opacity-70">
             <div className="grid gap-3 md:grid-cols-2">
               <Input value={draft.firstName} onChange={(event) => updateField("firstName", event.target.value)} placeholder="Nombres" />
               <Input value={draft.lastName} onChange={(event) => updateField("lastName", event.target.value)} placeholder="Apellidos" />
@@ -765,8 +760,8 @@ export function PeopleWorkspace({ initialMode = "view" }: PeopleWorkspaceProps =
             </div>
 
             {selectedIsLeader && (
-              <div className="rounded-2xl border border-brand-gold/25 bg-brand-gold/10 px-4 py-3 text-sm text-brand-ink/75">
-                <UserCheck className="mr-2 inline h-4 w-4 text-brand-gold" />
+              <div className="rounded-2xl border border-brand-emerald/25 bg-brand-emerald/10 px-4 py-3 text-sm text-brand-ink/75">
+                <UserCheck className="mr-2 inline h-4 w-4 text-brand-emerald" />
                 Este líder tiene {people.filter((person) => person.leaderDocumentNumber === draft.documentNumber).length} persona(s) a cargo.
               </div>
             )}
@@ -774,14 +769,15 @@ export function PeopleWorkspace({ initialMode = "view" }: PeopleWorkspaceProps =
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-brand-ink/62">
-                {mode === "view" ? "Presiona Editar para modificar este registro." : "Los cambios de producción se guardarán contra Supabase según rol y permisos."}
+                Los cambios de producción se guardarán contra Supabase según rol y permisos.
               </p>
-              <Button variant="gold" onClick={handleSave} disabled={saving || mode === "view"}>
+              <Button variant="gold" onClick={handleSave} disabled={saving}>
                 {saving ? "Guardando..." : "Guardar cambios"}
               </Button>
             </div>
           </CardContent>
-        </Card>
+          </Card>
+        )}
       </div>
 
       {viewerUrl && <ResumeViewer url={viewerUrl} name={viewerName} onClose={() => setViewerUrl(null)} />}

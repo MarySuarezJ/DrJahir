@@ -21,7 +21,7 @@ export function Sidebar({ open = true, onClose }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "fixed inset-y-0 left-0 z-40 w-[300px] transform border-r border-brand-line bg-white/90 p-5 backdrop-blur-2xl transition lg:static lg:translate-x-0",
+        "fixed inset-y-0 left-0 z-40 w-[300px] transform border-r border-brand-emerald/25 bg-white/92 p-5 backdrop-blur-2xl transition lg:static lg:translate-x-0",
         open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}
     >
@@ -41,11 +41,11 @@ export function Sidebar({ open = true, onClose }: SidebarProps) {
                 className={cn(
                   "flex items-center gap-3 rounded-2xl border px-4 py-3 transition",
                   active
-                    ? "border-brand-gold/35 bg-brand-gold/12 text-brand-ink shadow-glowGold"
-                    : "border-brand-line bg-white/60 text-brand-ink/78 hover:border-brand-gold/25 hover:bg-brand-beige/70 hover:text-brand-ink"
+                    ? "border-brand-emerald/45 bg-brand-emerald/16 text-brand-ink shadow-glowEmerald"
+                    : "border-brand-line bg-white/68 text-brand-ink/78 hover:border-brand-emerald/35 hover:bg-brand-emerald/8 hover:text-brand-ink"
                 )}
               >
-                <span className={cn("rounded-xl p-2", active ? "bg-white/70" : "bg-brand-beige/70")}>
+                <span className={cn("rounded-xl p-2", active ? "bg-white/80 text-brand-navy" : "bg-brand-emeraldSoft/25 text-brand-navy")}>
                   <Icon className="h-4 w-4" />
                 </span>
                 <span className="min-w-0">
