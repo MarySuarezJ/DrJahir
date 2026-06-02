@@ -103,7 +103,9 @@ Carga primero:
 - Historial de mensajería en `envios_mensajes` y `destinatarios_mensaje`.
 - Accesos territoriales por usuario en `accesos_territoriales_usuario`.
 
-La carga territorial, de personas y de fechas importantes también se puede hacer desde el módulo `Administración` con la plantilla `/templates/carga-masiva-dr-jahir.xlsx`. La guía detallada está en `docs/07-carga-masiva-excel.md`.
+La carga territorial y de personas se puede hacer desde el módulo `Administración` con la plantilla `/templates/carga-masiva-dr-jahir.xlsx` o con un archivo `votantes.json`. Las fechas importantes se crean desde Administración, no desde Excel. La guía detallada está en `docs/07-carga-masiva-excel.md`.
+
+Para consulta operativa en Supabase usa las vistas `operacion_*`; esas vistas muestran códigos, cédulas y nombres en español, sin pedir UUID técnicos.
 
 Para archivos grandes usa Supabase Storage y guarda en la base solo `storage_bucket` y `storage_path`.
 

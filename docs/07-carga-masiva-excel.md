@@ -1,12 +1,14 @@
-# Carga Masiva Desde Excel
+# Carga Masiva Desde Excel O JSON
 
 ## Objetivo
 
-El administrador principal puede descargar una plantilla de Excel, llenarla y subirla desde el módulo **Administración**. El sistema valida el archivo y carga la información en Supabase.
+El administrador principal puede descargar una plantilla de Excel, llenarla y subirla desde el módulo **Administración**. También puede subir directamente un archivo `votantes.json` con campos como `cedula`, `nombre`, `telefono`, `whatsapp`, `municipio`, `barrio`, `ocupacion` y `estado`.
+
+El sistema valida el archivo y carga la información en Supabase sin pedir UUID ni IDs técnicos.
 
 Plantilla: `/templates/carga-masiva-dr-jahir.xlsx`
 
-## Hojas del archivo
+## Excel
 
 ### Territorio
 
@@ -45,11 +47,9 @@ Sirve para cargar o actualizar personas del CRM.
 Campos obligatorios:
 
 - `nombres`
-- `apellidos`
 - `cedula`
-- `municipio`
 
-La cédula es la llave de actualización. Si vuelves a subir una persona con la misma cédula, el sistema actualiza el registro en vez de duplicarlo.
+La cédula es la llave de actualización. Si vuelves a subir una persona con la misma cédula, el sistema actualiza el registro en vez de duplicarlo. Si falta `apellidos`, el sistema marca `Por completar`. Si falta `municipio`, el sistema carga `Por asignar` para que puedas filtrar y corregir después.
 
 Columnas principales:
 
@@ -98,13 +98,30 @@ Ejemplo de jerarquía:
 
 Las fechas importantes ya no se cargan por Excel. Se crean y editan desde **Administración > Alertas > Días importantes**, porque hacen parte de las automatizaciones y mensajes.
 
+## JSON de votantes
+
+Puedes subir el archivo `votantes.json` desde el mismo panel de carga masiva. El importador hace esta conversión:
+
+- `cedula` -> cédula de la persona.
+- `nombre` -> nombres y apellidos.
+- `telefono`, `whatsapp`, `email` -> datos de contacto.
+- `estado` -> etiqueta de apoyo, por ejemplo `Simpatizante` o `Potencial`.
+- `departamento`, `municipio`, `barrio` -> ubicación.
+- `lugarPuesto`, `lugarMesa` -> votación.
+- `ocupacion` -> profesión/cargo de referencia.
+- `notas`, `edad`, `genero`, `nivelEstudio`, `instagram` -> notas operativas.
+
+Cuando el JSON no trae municipio, barrio, puesto o mesa, el sistema no bloquea la carga. Guarda la persona y agrega etiquetas como `pendiente:municipio`, `pendiente:barrio`, `pendiente:puesto_votacion` o `pendiente:mesa`.
+
+Para revisar qué falta, abre en Supabase la vista `operacion_personas_pendientes`.
+
 ## Flujo de uso
 
 1. Entrar como `Administrador Principal`.
 2. Ir a **Administración**.
 3. Descargar la plantilla de carga masiva.
-4. Llenar una o varias hojas.
-5. Subir el archivo `.xlsx`.
+4. Llenar una o varias hojas, o tener listo `votantes.json`.
+5. Subir el archivo `.xlsx` o `.json`.
 6. Revisar el resumen y las alertas de validación.
 7. Confirmar **Cargar a Supabase**.
 
@@ -123,4 +140,6 @@ La clave `SUPABASE_SERVICE_ROLE_KEY` debe quedar como secreto privado, nunca exp
 - Municipios, comunas, barrios y mesas se cargan de forma idempotente.
 - Las personas se actualizan por `cedula`.
 - Las fechas importantes se administran desde el panel, no desde la plantilla.
+- Los registros sin municipio quedan en `Por asignar`.
+- Las vistas `operacion_*` muestran datos con códigos simples y sin UUID.
 - Si hay errores de validación, el sistema no escribe en Supabase hasta corregirlos.

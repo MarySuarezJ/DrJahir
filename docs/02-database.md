@@ -4,6 +4,25 @@
 
 Se propone un diseño PostgreSQL normalizado y compacto con entidades geográficas, personas, líderes, documentos, fechas importantes, formularios y usuarios.
 
+Hay dos capas:
+
+- **Tablas técnicas**: guardan relaciones internas y seguridad de Supabase. Pueden tener columnas UUID como `id`, `department_id` o `person_id`.
+- **Vistas operativas**: son las que debe usar el equipo para revisar y cargar operación diaria. Usan códigos simples, cédulas y nombres en español, sin exponer los UUID técnicos.
+
+En Supabase Table Editor, para consulta operativa usa:
+
+- `operacion_personas`
+- `operacion_personas_pendientes`
+- `operacion_lideres`
+- `operacion_municipios`
+- `operacion_comunas_barrios`
+- `operacion_puestos_mesas`
+- `operacion_usuarios`
+- `operacion_envios_mensajes`
+- `operacion_destinatarios_mensaje`
+
+Los códigos visibles son, por ejemplo, `PE_001` para personas, `LI_001` para líderes, `US_001` para usuarios, `EN_001` para envíos y códigos DIVIPOLA para municipios.
+
 ## Entidades principales
 
 ### Geografía
@@ -56,6 +75,7 @@ Perfil de aplicación vinculado a `auth.users`.
 
 Campos: `id`, `full_name`, `role`, `status`, `avatar_url`, `created_at`, `updated_at`.
 Campos operativos adicionales: `email`, `username`, `territory`, `can_manage_alerts`, `dashboard_preferences`.
+Código visible: `codigo`.
 
 ### personas
 
@@ -63,6 +83,7 @@ Entidad central del CRM.
 
 Campos: `id`, `document_number`, `first_name`, `last_name`, `phone`, `whatsapp`, `email`, `fecha_nacimiento`, `address`, `profession`, `company`, `job_title`, `employment_status`, `voting_place`, `voting_table`, `leader_id`, `photo_path`, `resume_path`, `notes`, `visibility_scope`, `created_at`, `updated_at`.
 La relación `leader_id` permite saber qué líder mueve o acompaña a cada persona.
+Código visible: `codigo`. Para cargar o actualizar personas se usa `document_number`/`cedula`, no el UUID.
 
 ### lideres
 
@@ -70,6 +91,7 @@ Núcleo jerárquico político.
 
 Campos: `id`, `person_id`, `parent_leader_id`, `leader_level`, `territorial_scope`, `influence_score`, `active`.
 El título del líder puede guardar el sector visible, por ejemplo `Líder Bajo Tablazo`.
+Código visible: `codigo`.
 
 ### documentos_persona
 
@@ -88,12 +110,26 @@ Campos: `id`, `title`, `date_type`, `date_month`, `date_day`, `exact_date`, `cha
 Historial de envíos por WhatsApp, correo y SMS.
 
 Campos: `id`, `canal`, `audiencia`, `asunto`, `cuerpo`, `estado`, `proveedor`, `modo_simulacion`, `total_destinatarios`, `total_enviados`, `total_fallidos`, `enviado_por`, `error`, `created_at`, `updated_at`.
+Código visible: `codigo`.
 
 ### destinatarios_mensaje
 
 Resultado individual de cada destinatario dentro de un envío.
 
 Campos: `id`, `envio_id`, `persona_id`, `nombre`, `email`, `telefono`, `whatsapp`, `estado`, `proveedor`, `proveedor_message_id`, `error`, `enviado_at`, `created_at`.
+Código visible: `codigo`.
+
+## Carga sin IDs técnicos
+
+La carga desde Administración acepta Excel y JSON. El sistema resuelve las relaciones así:
+
+- Personas por `cedula`.
+- Líder responsable por `lider_cedula`.
+- Municipio por nombre/código DIVIPOLA.
+- Puesto de votación por nombre dentro del municipio.
+- Mesa por número dentro del puesto.
+
+Si una persona llega sin municipio, se guarda como `Por asignar` y aparece en `operacion_personas_pendientes`.
 
 ## Mermaid ER
 

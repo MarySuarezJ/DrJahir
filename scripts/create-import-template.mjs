@@ -32,12 +32,13 @@ await writeExcelFile(
       columns: columns([72]),
       data: toSheetData([
         ["Plantilla de carga masiva - Dr. Jahir"],
-        ["Llena las hojas Territorio y Personas. Puedes dejar hojas vacias si no las necesitas."],
+        ["Llena las hojas Territorio y Personas. Tambien puedes subir directamente el archivo votantes.json desde Administracion."],
         ["No cambies los nombres de las hojas ni los encabezados."],
         ["Campos obligatorios en Territorio: municipio."],
-        ["Campos obligatorios en Personas: nombres, apellidos, cedula, municipio. Para cumpleanos usa fecha_nacimiento."],
+        ["Campos obligatorios en Personas: nombres y cedula. Si falta municipio se cargara como Por asignar."],
         ["Las fechas importantes se crean desde el modulo Administracion, no desde esta plantilla."],
-        ["Al subir el archivo desde Administracion, el sistema actualiza registros existentes por cedula o municipio."]
+        ["Al subir el archivo desde Administracion, el sistema actualiza registros existentes por cedula o municipio."],
+        ["Para revisar datos incompletos en Supabase usa la vista operacion_personas_pendientes."]
       ])
     },
     {
