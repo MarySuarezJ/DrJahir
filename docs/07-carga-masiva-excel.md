@@ -61,6 +61,7 @@ Columnas principales:
 - `telefono`
 - `whatsapp`
 - `correo`
+- `fecha_nacimiento`
 - `direccion`
 - `departamento`
 - `municipio`

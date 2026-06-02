@@ -11,9 +11,20 @@ NEXT_PUBLIC_SUPABASE_URL=https://TU-PROYECTO.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=anon-key
 SUPABASE_SERVICE_ROLE_KEY=service-role-key
 NEXT_PUBLIC_SITE_URL=https://tu-dominio.com
+MESSAGING_DRY_RUN=true
+MESSAGING_MAX_RECIPIENTS=25
+RESEND_API_KEY=
+EMAIL_FROM="Equipo Dr. Jahir <notificaciones@tudominio.com>"
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_SMS_FROM=
+TWILIO_MESSAGING_SERVICE_SID=
+TWILIO_WHATSAPP_FROM=
+TWILIO_WHATSAPP_MESSAGING_SERVICE_SID=
 ```
 
 La `SUPABASE_SERVICE_ROLE_KEY` solo se usa en rutas de servidor como `src/app/api/admin/users/route.ts`. No debe exponerse en el navegador.
+Deja `MESSAGING_DRY_RUN=true` mientras pruebas; cambia a `false` solo cuando Resend/Twilio estén verificados.
 
 ## 2. Base de datos Supabase
 
@@ -89,6 +100,7 @@ Carga primero:
 - Personas, líderes y asignaciones territoriales.
 - Documentos en buckets de Supabase Storage: `documents`, `photos`, `resumes`.
 - Fechas importantes y alertas en `fechas_importantes`.
+- Historial de mensajería en `envios_mensajes` y `destinatarios_mensaje`.
 - Accesos territoriales por usuario en `accesos_territoriales_usuario`.
 
 La carga territorial, de personas y de fechas importantes también se puede hacer desde el módulo `Administración` con la plantilla `/templates/carga-masiva-dr-jahir.xlsx`. La guía detallada está en `docs/07-carga-masiva-excel.md`.

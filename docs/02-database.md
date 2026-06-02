@@ -26,6 +26,8 @@ Se propone un diseño PostgreSQL normalizado y compacto con entidades geográfic
 ### Alertas y operación
 
 - fechas_importantes
+- envios_mensajes
+- destinatarios_mensaje
 
 ### Captación pública
 
@@ -59,7 +61,7 @@ Campos operativos adicionales: `email`, `username`, `territory`, `can_manage_ale
 
 Entidad central del CRM.
 
-Campos: `id`, `document_number`, `first_name`, `last_name`, `phone`, `whatsapp`, `email`, `address`, `profession`, `company`, `job_title`, `employment_status`, `voting_place`, `voting_table`, `leader_id`, `photo_path`, `resume_path`, `notes`, `visibility_scope`, `created_at`, `updated_at`.
+Campos: `id`, `document_number`, `first_name`, `last_name`, `phone`, `whatsapp`, `email`, `fecha_nacimiento`, `address`, `profession`, `company`, `job_title`, `employment_status`, `voting_place`, `voting_table`, `leader_id`, `photo_path`, `resume_path`, `notes`, `visibility_scope`, `created_at`, `updated_at`.
 La relación `leader_id` permite saber qué líder mueve o acompaña a cada persona.
 
 ### lideres
@@ -81,6 +83,18 @@ Fechas y alertas administrables para cumpleaños, días profesionales, días cí
 
 Campos: `id`, `title`, `date_type`, `date_month`, `date_day`, `exact_date`, `channel`, `audience_scope`, `message_template`, `active`, `created_by`, `approved_by`.
 
+### envios_mensajes
+
+Historial de envíos por WhatsApp, correo y SMS.
+
+Campos: `id`, `canal`, `audiencia`, `asunto`, `cuerpo`, `estado`, `proveedor`, `modo_simulacion`, `total_destinatarios`, `total_enviados`, `total_fallidos`, `enviado_por`, `error`, `created_at`, `updated_at`.
+
+### destinatarios_mensaje
+
+Resultado individual de cada destinatario dentro de un envío.
+
+Campos: `id`, `envio_id`, `persona_id`, `nombre`, `email`, `telefono`, `whatsapp`, `estado`, `proveedor`, `proveedor_message_id`, `error`, `enviado_at`, `created_at`.
+
 ## Mermaid ER
 
 ```mermaid
@@ -92,6 +106,8 @@ erDiagram
     PUESTOS_VOTACION ||--o{ MESAS_VOTACION : groups
     LIDERES ||--o{ PERSONAS : guides
     PERSONAS ||--o{ DOCUMENTOS_PERSONA : owns
+    PERSONAS ||--o{ DESTINATARIOS_MENSAJE : receives
+    ENVIOS_MENSAJES ||--o{ DESTINATARIOS_MENSAJE : contains
     PERFILES ||--o{ ACCESOS_TERRITORIALES_USUARIO : receives
     PERSONAS ||--o| LIDERES : can_be_a_leader
     LIDERES ||--o{ LIDERES : parent_of

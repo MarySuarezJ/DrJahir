@@ -404,6 +404,7 @@ export async function importAdminWorkbook(client: SupabaseClient, parsed: Parsed
             phone: row.phone || null,
             whatsapp: row.whatsapp || null,
             email: row.email || null,
+            fecha_nacimiento: row.birthDate || null,
             address: row.address || null,
             barrio: row.neighborhood || null,
             comuna: row.commune || null,

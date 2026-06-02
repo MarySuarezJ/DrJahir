@@ -35,7 +35,7 @@ await writeExcelFile(
         ["Llena las hojas Territorio, Personas y Fechas importantes. Puedes dejar hojas vacias si no las necesitas."],
         ["No cambies los nombres de las hojas ni los encabezados."],
         ["Campos obligatorios en Territorio: municipio."],
-        ["Campos obligatorios en Personas: nombres, apellidos, cedula, municipio."],
+        ["Campos obligatorios en Personas: nombres, apellidos, cedula, municipio. Para cumpleanos usa fecha_nacimiento."],
         ["Campos obligatorios en Fechas importantes: titulo, mensaje, y fecha exacta o mes/dia."],
         ["Para audiencia_json usa JSON valido, por ejemplo: {\"profession\":[\"docente\"]}."],
         ["Al subir el archivo desde Administracion, el sistema actualiza registros existentes por cedula, municipio o titulo."]
@@ -69,7 +69,7 @@ await writeExcelFile(
     {
       sheet: "Personas",
       stickyRowsCount: 1,
-      columns: columns([18, 18, 16, 16, 20, 16, 16, 28, 24, 16, 18, 20, 24, 22, 22, 22, 18, 28, 10, 16, 18, 16, 28, 16, 34]),
+      columns: columns([18, 18, 16, 16, 20, 16, 16, 28, 16, 24, 16, 18, 20, 24, 22, 22, 22, 18, 28, 10, 16, 18, 16, 28, 16, 34]),
       data: toSheetData([
         [
           "nombres",
@@ -80,6 +80,7 @@ await writeExcelFile(
           "telefono",
           "whatsapp",
           "correo",
+          "fecha_nacimiento",
           "direccion",
           "departamento",
           "municipio",
@@ -107,6 +108,7 @@ await writeExcelFile(
           "3105550001",
           "3105550001",
           "mariana.suarez@drjahir.com",
+          "1992-09-21",
           "Bajo Tablazo",
           "Caldas",
           "Manizales",
@@ -134,6 +136,7 @@ await writeExcelFile(
           "3105551201",
           "3105551201",
           "laura.gomez@drjahir.com",
+          "1990-04-12",
           "Cra. 24 #19-31",
           "Caldas",
           "Manizales",
@@ -161,6 +164,7 @@ await writeExcelFile(
           "3105553366",
           "3105553366",
           "",
+          "1987-12-03",
           "Vereda El Cable",
           "Caldas",
           "Riosucio",

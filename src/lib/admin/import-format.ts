@@ -40,6 +40,7 @@ export type ParsedPersonRow = {
   phone: string;
   whatsapp: string;
   email: string;
+  birthDate: string;
   address: string;
   department: string;
   municipality: string;
@@ -111,6 +112,7 @@ const aliases = {
   phone: ["telefono", "phone", "celular"],
   whatsapp: ["whatsapp", "wsp"],
   email: ["correo", "email", "correo_electronico"],
+  birthDate: ["fecha_nacimiento", "birth_date", "nacimiento", "cumpleanos", "cumpleaños"],
   address: ["direccion", "address"],
   profession: ["profesion", "profesión", "profession"],
   company: ["empresa", "company"],
@@ -357,6 +359,7 @@ export function parseImportPayload(payload: ImportPayload): ParsedImport {
         phone: text(readCell(row, "phone")),
         whatsapp: text(readCell(row, "whatsapp")),
         email: text(readCell(row, "email")).toLowerCase(),
+        birthDate: parseExactDate(readCell(row, "birthDate")),
         address: text(readCell(row, "address")),
         department: text(readCell(row, "department")) || "Caldas",
         municipality,

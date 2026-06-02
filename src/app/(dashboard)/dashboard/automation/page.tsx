@@ -8,7 +8,7 @@ export default function AutomationPage() {
         <Badge variant="gold">Automatización política</Badge>
         <h2 className="mt-3 font-display text-4xl font-semibold text-white">Campañas, cumpleaños y segmentación</h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-white/75 sm:text-base">
-          Estructura preparada para WhatsApp, correo y SMS sin integrar todavía APIs externas.
+          Plantillas conectadas al envío operativo por WhatsApp, correo y SMS con historial en Supabase.
         </p>
       </div>
 

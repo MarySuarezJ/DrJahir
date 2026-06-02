@@ -10,6 +10,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { automationTemplates as seedTemplates, automationQueue } from "@/lib/data/automation";
 import type { AutomationTemplate } from "@/lib/types/domain";
+import type { MessageChannel } from "@/lib/messaging/types";
 
 type Status = "Active" | "Scheduled" | "Draft" | "Paused";
 
@@ -40,6 +41,7 @@ export function AutomationWorkspace() {
   const [form, setForm] = useState(emptyForm());
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [sent, setSent] = useState<string[]>([]);
+  const [sendFeedback, setSendFeedback] = useState<Record<string, string>>({});
 
   function handleCreate() {
     if (!form.name.trim()) return;
@@ -65,9 +67,37 @@ export function AutomationWorkspace() {
     setTemplates((prev) => prev.filter((t) => t.id !== id));
   }
 
-  function handleSend(id: string) {
-    setSent((prev) => [...prev, id]);
-    setTimeout(() => setSent((prev) => prev.filter((s) => s !== id)), 2500);
+  function channelToApi(channel: Template["channel"]): MessageChannel {
+    if (channel === "Email") return "correo";
+    if (channel === "SMS") return "sms";
+    return "whatsapp";
+  }
+
+  async function handleSend(template: Template) {
+    const fallbackMessage = "Hola {nombre}, te escribimos desde el equipo del Dr. Jahir.";
+    const response = await fetch("/api/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        channel: channelToApi(template.channel),
+        audience: template.audience,
+        subject: template.name,
+        body: template.message?.trim() || fallbackMessage
+      })
+    });
+    const data = (await response.json()) as { error?: string; summary?: { recipients: number; failed: number; simulated: number } };
+
+    if (!response.ok) {
+      setSendFeedback((prev) => ({ ...prev, [template.id]: data.error ?? "No se pudo ejecutar la plantilla." }));
+      return;
+    }
+
+    setSent((prev) => [...prev, template.id]);
+    setSendFeedback((prev) => ({
+      ...prev,
+      [template.id]: `${data.summary?.recipients ?? 0} destinatario(s) procesados. Fallidos: ${data.summary?.failed ?? 0}. Simulados: ${data.summary?.simulated ?? 0}.`
+    }));
+    setTimeout(() => setSent((prev) => prev.filter((s) => s !== template.id)), 2500);
   }
 
   return (
@@ -165,7 +195,12 @@ export function AutomationWorkspace() {
 
                 {wasSent && (
                   <div className="mt-3 rounded-xl border border-brand-emerald/20 bg-brand-emerald/10 px-3 py-2 text-xs text-emerald-300">
-                    ✓ Campaña enviada correctamente
+                    Campaña procesada correctamente
+                  </div>
+                )}
+                {sendFeedback[tpl.id] && (
+                  <div className="mt-3 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/72">
+                    {sendFeedback[tpl.id]}
                   </div>
                 )}
 
@@ -173,7 +208,7 @@ export function AutomationWorkspace() {
                   <Button variant="ghost" size="sm" onClick={() => toggleStatus(tpl.id)}>
                     {tpl.status === "Active" ? <><Pause className="h-3.5 w-3.5" /> Pausar</> : <><Play className="h-3.5 w-3.5" /> Activar</>}
                   </Button>
-                  <Button variant="emerald" size="sm" onClick={() => handleSend(tpl.id)}>
+                  <Button variant="emerald" size="sm" onClick={() => void handleSend(tpl)}>
                     <Send className="h-3.5 w-3.5" />Enviar ahora
                   </Button>
                   <button onClick={() => deleteTemplate(tpl.id)} className="ml-auto text-white/35 hover:text-rose-400 transition">
