@@ -1,14 +1,6 @@
 import { BrandMark } from "@/components/brand/brand-mark";
 import { LoginForm } from "@/components/auth/login-form";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { Shield, Sparkles, WandSparkles } from "lucide-react";
-
-const loginHighlights = [
-  { icon: Shield, title: "Permisos por rol", detail: "Acceso segmentado por administración, legal y territorio." },
-  { icon: Sparkles, title: "Dashboard inteligente", detail: "Métricas, mapa, rankings y actividad en tiempo real." },
-  { icon: WandSparkles, title: "Automatización", detail: "Cumpleaños, campañas y segmentación listas para escalar." }
-];
 
 export default function LoginPage() {
   return (
@@ -25,26 +17,6 @@ export default function LoginPage() {
             <p className="max-w-full break-words text-base leading-7 text-brand-ink/72 sm:max-w-2xl sm:text-lg">
               Plataforma operativa para seguimiento de líderes, personas movilizadas, territorios, alertas, documentos y comunicación segmentada.
             </p>
-          </div>
-
-          <div className="grid min-w-0 gap-4 md:grid-cols-3">
-            {loginHighlights.map((item) => {
-              const Icon = item.icon;
-
-              return (
-                <Card key={item.title} className="border-brand-line bg-white/76">
-                  <div className="space-y-4 p-5">
-                    <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-brand-line bg-brand-beige/75 text-brand-navy">
-                      <Icon className="h-5 w-5" />
-                    </span>
-                    <div>
-                      <p className="font-semibold text-brand-ink">{item.title}</p>
-                      <p className="mt-2 text-sm leading-6 text-brand-ink/70">{item.detail}</p>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
           </div>
         </section>
 
