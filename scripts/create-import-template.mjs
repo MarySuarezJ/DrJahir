@@ -32,7 +32,7 @@ await writeExcelFile(
       columns: columns([72]),
       data: toSheetData([
         ["Plantilla de carga masiva - Dr. Jahir"],
-        ["Llena las hojas Territorio y Personas. Tambien puedes subir directamente el archivo votantes.json desde Administracion."],
+        ["Llena las hojas Territorio y Personas. Puedes dejar hojas vacias si no las necesitas."],
         ["No cambies los nombres de las hojas ni los encabezados."],
         ["Campos obligatorios en Territorio: municipio."],
         ["Campos obligatorios en Personas: nombres y cedula. Si falta municipio se cargara como Por asignar."],

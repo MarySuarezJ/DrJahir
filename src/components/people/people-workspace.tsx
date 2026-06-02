@@ -131,6 +131,8 @@ type PeopleWorkspaceProps = {
   initialMode?: "view" | "create";
 };
 
+type PeopleMode = "view" | "create" | "edit";
+
 export function PeopleWorkspace({ initialMode = "view" }: PeopleWorkspaceProps = {}) {
   const router = useRouter();
   const startsCreating = initialMode === "create";
@@ -140,7 +142,7 @@ export function PeopleWorkspace({ initialMode = "view" }: PeopleWorkspaceProps =
   const [search, setSearch] = useState("");
   const [municipalityFilter, setMunicipalityFilter] = useState("all");
   const [draft, setDraft] = useState<PersonRecord>(startsCreating ? blankPerson() : peopleSeed[0] ?? blankPerson());
-  const [mode, setMode] = useState<"view" | "create">(startsCreating ? "create" : "view");
+  const [mode, setMode] = useState<PeopleMode>(startsCreating ? "create" : "view");
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const [viewerName, setViewerName] = useState("");
   const [syncMessage, setSyncMessage] = useState("");
@@ -248,6 +250,13 @@ export function PeopleWorkspace({ initialMode = "view" }: PeopleWorkspaceProps =
     if (isLeader(person)) setSelectedLeaderDocument(person.documentNumber);
   }
 
+  function editPerson(person: PersonRecord) {
+    setSelectedId(person.id);
+    setMode("edit");
+    syncDraft(person);
+    if (isLeader(person)) setSelectedLeaderDocument(person.documentNumber);
+  }
+
   function createNew() {
     router.push("/dashboard/people/new");
   }
@@ -292,6 +301,7 @@ export function PeopleWorkspace({ initialMode = "view" }: PeopleWorkspaceProps =
 
         await loadPeopleFromApi(nextPerson.documentNumber);
         setSyncMessage("Persona guardada en Supabase.");
+        setMode("view");
       } finally {
         setSaving(false);
       }
@@ -310,6 +320,7 @@ export function PeopleWorkspace({ initialMode = "view" }: PeopleWorkspaceProps =
     setPeople((current) => current.map((person) => (person.id === nextPerson.id ? nextPerson : person)));
     setSelectedId(nextPerson.id);
     setDraft(nextPerson);
+    setMode("view");
     if (isLeader(nextPerson)) setSelectedLeaderDocument(nextPerson.documentNumber);
   }
 
@@ -404,6 +415,7 @@ export function PeopleWorkspace({ initialMode = "view" }: PeopleWorkspaceProps =
   }
 
   const selectedIsLeader = isLeader(draft);
+  const isFormLocked = mode === "view";
 
   return (
     <div className="space-y-6">
@@ -539,6 +551,7 @@ export function PeopleWorkspace({ initialMode = "view" }: PeopleWorkspaceProps =
                   <TableHead>Líder responsable</TableHead>
                   <TableHead>Laboral</TableHead>
                   <TableHead>HV</TableHead>
+                  <TableHead>Acciones</TableHead>
                 </tr>
               </TableHeader>
               <TableBody>
@@ -577,6 +590,12 @@ export function PeopleWorkspace({ initialMode = "view" }: PeopleWorkspaceProps =
                           <span className="text-xs text-brand-muted">Sin archivo</span>
                         )}
                       </TableCell>
+                      <TableCell onClick={(event) => event.stopPropagation()}>
+                        <Button variant="ghost" size="sm" onClick={() => editPerson(person)}>
+                          <PencilLine className="h-3.5 w-3.5" />
+                          Editar
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -593,16 +612,30 @@ export function PeopleWorkspace({ initialMode = "view" }: PeopleWorkspaceProps =
                 <h3 className="mt-1 font-display text-2xl font-semibold text-brand-ink">{mode === "create" ? "Nuevo registro" : fullName(draft)}</h3>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="ghost" onClick={() => selectedId && setDraft(people.find((person) => person.id === selectedId) ?? draft)}>
-                  <PencilLine className="h-4 w-4" />
+                {mode === "view" ? (
+                  <Button variant="ghost" onClick={() => setMode("edit")} disabled={!selectedId}>
+                    <PencilLine className="h-4 w-4" />
+                    Editar
+                  </Button>
+                ) : mode === "edit" ? (
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      if (selectedId) setDraft(people.find((person) => person.id === selectedId) ?? draft);
+                      setMode("view");
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                ) : null}
+                <Button variant="danger" onClick={handleDelete} disabled={saving || mode === "create"}>
+                  <Trash2 className="h-4 w-4" />
                 </Button>
-              <Button variant="danger" onClick={handleDelete} disabled={saving}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            <fieldset disabled={isFormLocked || saving} className="space-y-4 disabled:opacity-70">
             <div className="grid gap-3 md:grid-cols-2">
               <Input value={draft.firstName} onChange={(event) => updateField("firstName", event.target.value)} placeholder="Nombres" />
               <Input value={draft.lastName} onChange={(event) => updateField("lastName", event.target.value)} placeholder="Apellidos" />
@@ -737,10 +770,13 @@ export function PeopleWorkspace({ initialMode = "view" }: PeopleWorkspaceProps =
                 Este líder tiene {people.filter((person) => person.leaderDocumentNumber === draft.documentNumber).length} persona(s) a cargo.
               </div>
             )}
+            </fieldset>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-brand-ink/62">Los cambios de producción se guardarán contra Supabase según rol y permisos.</p>
-              <Button variant="gold" onClick={handleSave} disabled={saving}>
+              <p className="text-sm text-brand-ink/62">
+                {mode === "view" ? "Presiona Editar para modificar este registro." : "Los cambios de producción se guardarán contra Supabase según rol y permisos."}
+              </p>
+              <Button variant="gold" onClick={handleSave} disabled={saving || mode === "view"}>
                 {saving ? "Guardando..." : "Guardar cambios"}
               </Button>
             </div>

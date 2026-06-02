@@ -121,7 +121,7 @@ Código visible: `codigo`.
 
 ## Carga sin IDs técnicos
 
-La carga desde Administración acepta Excel y JSON. El sistema resuelve las relaciones así:
+La carga desde Administración acepta Excel y registros manuales. El sistema resuelve las relaciones así:
 
 - Personas por `cedula`.
 - Líder responsable por `lider_cedula`.

@@ -10,7 +10,6 @@ import {
   importTemplatePath,
   normalizeImportKey,
   parseImportPayload,
-  votantesJsonToImportPayload,
   type ImportIssue,
   type ImportPayload,
   type ImportRow,
@@ -88,32 +87,24 @@ export function ExcelImportPanel({ role }: { role: AppRole }) {
   }, [preview, status]);
 
   async function handleFile(file: File) {
-    const isJson = file.name.toLowerCase().endsWith(".json");
-
-    setStatus({ type: "loading", message: isJson ? "Leyendo archivo JSON..." : "Leyendo archivo de Excel..." });
+    setStatus({ type: "loading", message: "Leyendo archivo de Excel..." });
 
     try {
-      let payload: ImportPayload;
-
-      if (isJson) {
-        payload = votantesJsonToImportPayload(JSON.parse(await file.text()) as unknown, file.name);
-      } else {
-        const readExcelFile = (await import("read-excel-file/browser")).default as (input: File) => Promise<WorkbookSheet[]>;
-        const workbook = await readExcelFile(file);
-        payload = {
-          fileName: file.name,
-          territoryRows: rowsFromSheet(workbook, importSheetNames.territory),
-          peopleRows: rowsFromSheet(workbook, importSheetNames.people),
-          importantDateRows: rowsFromSheet(workbook, importSheetNames.importantDates)
-        };
-      }
+      const readExcelFile = (await import("read-excel-file/browser")).default as (input: File) => Promise<WorkbookSheet[]>;
+      const workbook = await readExcelFile(file);
+      const payload: ImportPayload = {
+        fileName: file.name,
+        territoryRows: rowsFromSheet(workbook, importSheetNames.territory),
+        peopleRows: rowsFromSheet(workbook, importSheetNames.people),
+        importantDateRows: rowsFromSheet(workbook, importSheetNames.importantDates)
+      };
 
       const parsed = parseImportPayload(payload);
 
       setPreview({ payload, parsed });
 
       if (parsed.totalRows === 0) {
-        setStatus({ type: "error", message: "No encontré filas para importar. Revisa que existan registros en el JSON o las hojas Territorio/Personas." });
+        setStatus({ type: "error", message: "No encontré filas para importar. Revisa que existan las hojas Territorio o Personas." });
         return;
       }
 
@@ -127,7 +118,7 @@ export function ExcelImportPanel({ role }: { role: AppRole }) {
       setPreview(null);
       setStatus({
         type: "error",
-        message: error instanceof Error ? error.message : "No pude leer el archivo. Usa la plantilla .xlsx o un JSON válido de votantes."
+        message: error instanceof Error ? error.message : "No pude leer el archivo. Usa la plantilla .xlsx descargable."
       });
     }
   }
@@ -167,7 +158,7 @@ export function ExcelImportPanel({ role }: { role: AppRole }) {
             <FileSpreadsheet className="h-5 w-5 text-brand-emerald" />
             <div>
               <p className="text-xs uppercase tracking-[0.28em] text-brand-muted">Carga masiva</p>
-              <h3 className="mt-1 font-display text-2xl font-semibold text-brand-ink">Excel o JSON para territorio y personas</h3>
+              <h3 className="mt-1 font-display text-2xl font-semibold text-brand-ink">Excel para territorio y personas</h3>
             </div>
           </div>
           <a
@@ -193,8 +184,8 @@ export function ExcelImportPanel({ role }: { role: AppRole }) {
             )}
           >
             {status.type === "loading" ? <Loader2 className="h-8 w-8 animate-spin text-brand-gold" /> : <UploadCloud className="h-8 w-8 text-brand-gold" />}
-            <span className="mt-3 text-sm font-semibold text-brand-ink">Subir archivo .xlsx o .json</span>
-            <span className="mt-1 text-xs leading-5 text-brand-ink/62">El JSON de votantes se normaliza por cédula y marca datos pendientes.</span>
+            <span className="mt-3 text-sm font-semibold text-brand-ink">Subir archivo .xlsx</span>
+            <span className="mt-1 text-xs leading-5 text-brand-ink/62">Solo administradores principales pueden cargar datos a la base.</span>
           </button>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
@@ -206,7 +197,7 @@ export function ExcelImportPanel({ role }: { role: AppRole }) {
         <input
           ref={inputRef}
           type="file"
-          accept=".xlsx,.json,application/json"
+          accept=".xlsx"
           className="hidden"
           onChange={(event) => {
             const file = event.target.files?.[0];
@@ -251,7 +242,7 @@ export function ExcelImportPanel({ role }: { role: AppRole }) {
           <div className="flex flex-wrap gap-2">
             <Badge variant="emerald">Upsert seguro</Badge>
             <Badge variant="neutral">Evita duplicar cédulas</Badge>
-            <Badge variant="gold">Acepta votantes.json</Badge>
+            <Badge variant="gold">Crea barrios y veredas</Badge>
           </div>
           <Button variant="emerald" onClick={() => void sendImport()} disabled={!preview || !canImport || hasBlockingIssues || status.type === "loading"}>
             {status.type === "loading" ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}

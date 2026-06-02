@@ -12,29 +12,22 @@ type MunicipalityStats = {
   unemployed: number;
 };
 
-const statsMap: Record<string, MunicipalityStats> = {
-  MANIZALES:   { supportPercent: 81, voters: 3420,  leaders: 64, employed: 1880, unemployed: 620 },
-  VILLAMARIA:  { supportPercent: 76, voters: 1980,  leaders: 38, employed: 1090, unemployed: 410 },
-  CHINCHINA:   { supportPercent: 69, voters: 1640,  leaders: 29, employed:  920, unemployed: 360 },
-  NEIRA:       { supportPercent: 74, voters:  940,  leaders: 21, employed:  550, unemployed: 180 },
-  PALESTINA:   { supportPercent: 72, voters: 1280,  leaders: 26, employed:  670, unemployed: 220 },
-  RIOSUCIO:    { supportPercent: 66, voters: 1260,  leaders: 24, employed:  660, unemployed: 260 },
-  SALAMINA:    { supportPercent: 71, voters:  860,  leaders: 17, employed:  430, unemployed: 150 },
-  "LA DORADA": { supportPercent: 63, voters: 1450,  leaders: 24, employed:  780, unemployed: 310 },
-  AGUADAS:     { supportPercent: 68, voters:  790,  leaders: 15, employed:  390, unemployed: 120 },
-  SUPIA:       { supportPercent: 70, voters: 1040,  leaders: 19, employed:  560, unemployed: 210 },
-  ANSERMA:     { supportPercent: 67, voters:  920,  leaders: 18, employed:  480, unemployed: 170 },
-  MANZANARES:  { supportPercent: 73, voters:  810,  leaders: 16, employed:  420, unemployed: 140 },
-  PENSILVANIA: { supportPercent: 65, voters:  870,  leaders: 14, employed:  410, unemployed: 180 },
-  FILADELFIA:  { supportPercent: 69, voters:  560,  leaders: 12, employed:  310, unemployed: 110 },
+type MapStatsResponse = {
+  stats?: Array<MunicipalityStats & { municipality: string }>;
+  error?: string;
 };
 
-function getStats(name: string): MunicipalityStats {
-  const key = name.toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-  return statsMap[key] ?? { supportPercent: 65, voters: 500, leaders: 10, employed: 280, unemployed: 100 };
+function normalizeName(name: string) {
+  return name.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+function getStats(name: string, statsMap: Record<string, MunicipalityStats>): MunicipalityStats {
+  const key = normalizeName(name);
+  return statsMap[key] ?? { supportPercent: 0, voters: 0, leaders: 0, employed: 0, unemployed: 0 };
 }
 
 function getFill(pct: number) {
+  if (pct <= 0) return "#9DBEBB";
   if (pct >= 80) return "#22c97d";
   if (pct >= 75) return "#4ade80";
   if (pct >= 70) return "#e8c55a";
@@ -43,6 +36,7 @@ function getFill(pct: number) {
 }
 
 function getBorder(pct: number) {
+  if (pct <= 0) return "#468189";
   if (pct >= 80) return "#15803d";
   if (pct >= 75) return "#16a34a";
   if (pct >= 70) return "#b45309";
@@ -64,7 +58,8 @@ export default function TerritoryMap() {
   const [geoData, setGeoData] = useState<GeoJSONData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selected, setSelected] = useState<{ name: string; stats: MunicipalityStats } | null>(null);
+  const [statsByMunicipality, setStatsByMunicipality] = useState<Record<string, MunicipalityStats>>({});
+  const [selectedName, setSelectedName] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/caldas-geojson")
@@ -82,6 +77,32 @@ export default function TerritoryMap() {
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    fetch("/api/map-stats")
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((data: MapStatsResponse) => {
+        const nextStats: Record<string, MunicipalityStats> = {};
+        (data.stats ?? []).forEach((item) => {
+          nextStats[normalizeName(item.municipality)] = {
+            supportPercent: item.supportPercent,
+            voters: item.voters,
+            leaders: item.leaders,
+            employed: item.employed,
+            unemployed: item.unemployed
+          };
+        });
+        setStatsByMunicipality(nextStats);
+      })
+      .catch(() => {
+        setStatsByMunicipality({});
+      });
+  }, []);
+
+  const selectedStats = selectedName ? getStats(selectedName, statsByMunicipality) : null;
 
   return (
     <div className="overflow-hidden rounded-[20px] border border-brand-line bg-white shadow-panel">
@@ -153,13 +174,13 @@ export default function TerritoryMap() {
             />
             <ZoomControl position="topright" />
             <GeoJSON
-              key={`${geoData.features.length}-${selected?.name ?? "sin-seleccion"}`}
+              key={`${geoData.features.length}-${selectedName ?? "sin-seleccion"}-${Object.keys(statsByMunicipality).length}`}
               ref={geoJsonRef}
               data={geoData as never}
               style={(feature) => {
                 const rawName: string = (feature?.properties?.MPIO_CNMBR as string) ?? "";
-                const stats = getStats(rawName);
-                const isSelected = rawName === selected?.name;
+                const stats = getStats(rawName, statsByMunicipality);
+                const isSelected = rawName === selectedName;
                 return {
                   color: isSelected ? "#273241" : getBorder(stats.supportPercent),
                   weight: isSelected ? 3 : 1.5,
@@ -169,14 +190,14 @@ export default function TerritoryMap() {
               }}
               onEachFeature={(feature, layer) => {
                 const rawName: string = (feature.properties?.MPIO_CNMBR as string) ?? "-";
-                const stats = getStats(rawName);
+                const stats = getStats(rawName, statsByMunicipality);
                 const pct = stats.supportPercent;
                 const cls = pct >= 75 ? "support-high" : pct >= 68 ? "support-mid" : "support-low";
 
                 layer.bindTooltip(
                   `<div style="min-width:180px">
                   <strong>${rawName}</strong>
-                  Votantes: <b>${stats.voters.toLocaleString("es-CO")}</b><br/>
+                  Personas: <b>${stats.voters.toLocaleString("es-CO")}</b><br/>
                   Líderes: <b>${stats.leaders}</b><br/>
                   Apoyo: <span class="${cls}">${pct}%</span><br/>
                   <span style="color:#7b8493">Clic para ver detalle</span>
@@ -185,7 +206,7 @@ export default function TerritoryMap() {
                 );
 
                 layer.on({
-                  click: () => setSelected({ name: rawName, stats }),
+                  click: () => setSelectedName(rawName),
                   mouseover: (e) => {
                     const t = e.target as { setStyle?: (o: PathOptions) => void };
                     t.setStyle?.({ weight: 3, fillOpacity: 0.85 });
@@ -201,24 +222,24 @@ export default function TerritoryMap() {
       </div>
 
       <div className="border-t border-brand-line bg-brand-cream/70 p-4 sm:p-5">
-        {selected ? (
+        {selectedName && selectedStats ? (
           <div className="space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.28em] text-brand-muted">Municipio seleccionado</p>
-                <h3 className="mt-1 font-display text-2xl font-semibold text-brand-ink">{selected.name}</h3>
+                <h3 className="mt-1 font-display text-2xl font-semibold text-brand-ink">{selectedName}</h3>
               </div>
               <span className="w-fit rounded-full border border-brand-line bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700">
-                {selected.stats.supportPercent}% apoyo
+                {selectedStats.supportPercent}% apoyo
               </span>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {[
-                { label: "Votantes", value: selected.stats.voters.toLocaleString("es-CO") },
-                { label: "Líderes", value: selected.stats.leaders.toLocaleString("es-CO") },
-                { label: "Empleados", value: selected.stats.employed.toLocaleString("es-CO") },
-                { label: "Desempleados", value: selected.stats.unemployed.toLocaleString("es-CO") },
+                { label: "Personas", value: selectedStats.voters.toLocaleString("es-CO") },
+                { label: "Líderes", value: selectedStats.leaders.toLocaleString("es-CO") },
+                { label: "Empleados", value: selectedStats.employed.toLocaleString("es-CO") },
+                { label: "Desempleados", value: selectedStats.unemployed.toLocaleString("es-CO") },
               ].map((metric) => (
                 <div key={metric.label} className="rounded-2xl border border-brand-line bg-white px-4 py-3">
                   <p className="text-xs uppercase tracking-[0.18em] text-brand-muted">{metric.label}</p>

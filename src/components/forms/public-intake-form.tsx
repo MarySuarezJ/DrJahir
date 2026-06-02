@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { CheckCircle2, FileText, Upload, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { EmploymentStatus, PersonRecord } from "@/lib/types/domain";
+import { hasSupabaseBrowserConfig } from "@/lib/supabase/client";
 
 type IntakeFormState = {
   fullName: string;
@@ -29,6 +30,7 @@ type IntakeFormState = {
   employmentStatus: string;
   votingPlace: string;
   votingTable: string;
+  leaderDocumentNumber: string;
   leaderName: string;
   message: string;
 };
@@ -56,6 +58,7 @@ const initialState: IntakeFormState = {
   employmentStatus: "",
   votingPlace: "",
   votingTable: "",
+  leaderDocumentNumber: "",
   leaderName: "",
   message: ""
 };
@@ -129,16 +132,50 @@ function normalizeEmploymentStatus(value: string): EmploymentStatus {
   return "empleado";
 }
 
+function fullName(person: PersonRecord) {
+  return `${person.firstName} ${person.lastName}`.trim();
+}
+
+function isLeader(person: PersonRecord) {
+  return person.supportLabel.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes("lider");
+}
+
 export function PublicIntakeForm({ mode = "public" }: PublicIntakeFormProps) {
   const isDirectMode = mode === "direct";
   const [form, setForm] = useState<IntakeFormState>(initialState);
+  const [leaders, setLeaders] = useState<PersonRecord[]>([]);
   const [resume, setResume] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    if (!isDirectMode || !hasSupabaseBrowserConfig()) return;
+
+    void (async () => {
+      try {
+        const response = await fetch("/api/people");
+        const data = (await response.json()) as { people?: PersonRecord[] };
+        if (response.ok && Array.isArray(data.people)) {
+          setLeaders(data.people.filter(isLeader));
+        }
+      } catch {
+        setLeaders([]);
+      }
+    })();
+  }, [isDirectMode]);
+
   function updateField<K extends keyof IntakeFormState>(field: K, value: IntakeFormState[K]) {
     setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function updateLeader(documentNumber: string) {
+    const leader = leaders.find((item) => item.documentNumber === documentNumber);
+    setForm((current) => ({
+      ...current,
+      leaderDocumentNumber: documentNumber,
+      leaderName: leader ? fullName(leader) : ""
+    }));
   }
 
   async function uploadResumeForPerson() {
@@ -170,7 +207,10 @@ export function PublicIntakeForm({ mode = "public" }: PublicIntakeFormProps) {
     const { firstName, lastName } = splitFullName(form.fullName);
     const resumePath = await uploadResumeForPerson();
     const supportLabel = supportLabelFromType(form.type);
-    const leaderNote = form.leaderName.trim() ? `Líder que refiere: ${form.leaderName.trim()}.` : "";
+    const selectedLeader = leaders.find((leader) => leader.documentNumber === form.leaderDocumentNumber);
+    const leaderName = selectedLeader ? fullName(selectedLeader) : form.leaderName.trim();
+    const leaderDocumentNumber = form.type === "leader" ? "" : form.leaderDocumentNumber;
+    const leaderNote = leaderName ? `Líder asignado: ${leaderName}.` : "";
     const personPayload: PersonRecord = {
       id: "",
       firstName,
@@ -191,8 +231,8 @@ export function PublicIntakeForm({ mode = "public" }: PublicIntakeFormProps) {
       employmentStatus: normalizeEmploymentStatus(form.employmentStatus),
       votingPlace: form.votingPlace,
       votingTable: form.votingTable,
-      leaderName: form.leaderName,
-      leaderDocumentNumber: "",
+      leaderName,
+      leaderDocumentNumber,
       leaderSector: form.type === "leader" ? form.neighborhood || form.commune || form.municipality : "",
       notes: [leaderNote, form.message].filter(Boolean).join("\n"),
       photoPath: "",
@@ -416,7 +456,18 @@ export function PublicIntakeForm({ mode = "public" }: PublicIntakeFormProps) {
           <section className="space-y-3">
             <p className="text-xs uppercase tracking-[0.24em] text-brand-muted">5. Observaciones</p>
             <div className="grid gap-4 md:grid-cols-2">
-              <Input value={form.leaderName} onChange={(event) => updateField("leaderName", event.target.value)} placeholder="Líder que lo refiere, si aplica" />
+              {isDirectMode && form.type !== "leader" ? (
+                <Select value={form.leaderDocumentNumber} onChange={(event) => updateLeader(event.target.value)}>
+                  <option value="">{leaders.length > 0 ? "Sin líder asignado" : "No hay líderes creados todavía"}</option>
+                  {leaders.map((leader) => (
+                    <option key={leader.documentNumber} value={leader.documentNumber}>
+                      {fullName(leader)} · {leader.leaderSector || leader.barrio || leader.municipality}
+                    </option>
+                  ))}
+                </Select>
+              ) : (
+                <Input value={form.leaderName} onChange={(event) => updateField("leaderName", event.target.value)} placeholder="Líder que lo refiere, si aplica" />
+              )}
               <Textarea value={form.message} onChange={(event) => updateField("message", event.target.value)} placeholder="¿Cómo desea participar? ¿Qué información importante debemos saber?" />
             </div>
           </section>
