@@ -10,6 +10,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { EmploymentStatus, PersonRecord } from "@/lib/types/domain";
 import { hasSupabaseBrowserConfig } from "@/lib/supabase/client";
+import { peopleSeed } from "@/lib/data/people";
 
 type IntakeFormState = {
   fullName: string;
@@ -37,6 +38,8 @@ type IntakeFormState = {
 
 type PublicIntakeFormProps = {
   mode?: "public" | "direct";
+  documentNumber?: string;
+  submitLabel?: string;
 };
 
 const initialState: IntakeFormState = {
@@ -118,6 +121,17 @@ function supportLabelFromType(type: IntakeFormState["type"]) {
   return "Simpatizante";
 }
 
+function typeFromSupportLabel(label: string): IntakeFormState["type"] {
+  const clean = label
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  if (clean.includes("lider")) return "leader";
+  if (clean.includes("volunt")) return "volunteer";
+  return "supporter";
+}
+
 function supportScoreFromType(type: IntakeFormState["type"]) {
   if (type === "leader") return 90;
   if (type === "volunteer") return 80;
@@ -140,7 +154,7 @@ function isLeader(person: PersonRecord) {
   return person.supportLabel.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes("lider");
 }
 
-export function PublicIntakeForm({ mode = "public" }: PublicIntakeFormProps) {
+export function PublicIntakeForm({ mode = "public", documentNumber, submitLabel }: PublicIntakeFormProps) {
   const isDirectMode = mode === "direct";
   const [form, setForm] = useState<IntakeFormState>(initialState);
   const [leaders, setLeaders] = useState<PersonRecord[]>([]);
@@ -150,20 +164,63 @@ export function PublicIntakeForm({ mode = "public" }: PublicIntakeFormProps) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!isDirectMode || !hasSupabaseBrowserConfig()) return;
+    if (!isDirectMode) return;
+
+    function applyPeople(records: PersonRecord[]) {
+      const nextLeaders = records.filter(isLeader);
+      setLeaders(nextLeaders);
+
+      const selected = documentNumber
+        ? records.find((person) => person.documentNumber === documentNumber)
+        : undefined;
+
+      if (selected) {
+        setForm({
+          fullName: fullName(selected),
+          documentNumber: selected.documentNumber,
+          birthDate: selected.birthDate ?? "",
+          phone: selected.phone,
+          whatsapp: selected.whatsapp,
+          email: selected.email,
+          type: typeFromSupportLabel(selected.supportLabel),
+          department: selected.department || "Caldas",
+          municipality: selected.municipality || "Manizales",
+          commune: selected.comuna,
+          neighborhood: selected.barrio,
+          address: selected.address,
+          profession: selected.profession,
+          company: selected.company,
+          jobTitle: selected.jobTitle,
+          employmentStatus: selected.employmentStatus,
+          votingPlace: selected.votingPlace,
+          votingTable: selected.votingTable,
+          leaderDocumentNumber: selected.leaderDocumentNumber ?? "",
+          leaderName: selected.leaderName,
+          message: selected.notes
+        });
+      }
+    }
+
+    if (!hasSupabaseBrowserConfig()) {
+      applyPeople(peopleSeed);
+      return;
+    }
 
     void (async () => {
       try {
         const response = await fetch("/api/people");
         const data = (await response.json()) as { people?: PersonRecord[] };
         if (response.ok && Array.isArray(data.people)) {
-          setLeaders(data.people.filter(isLeader));
+          applyPeople(data.people);
+          return;
         }
+
+        applyPeople(peopleSeed);
       } catch {
-        setLeaders([]);
+        applyPeople(peopleSeed);
       }
     })();
-  }, [isDirectMode]);
+  }, [documentNumber, isDirectMode]);
 
   function updateField<K extends keyof IntakeFormState>(field: K, value: IntakeFormState[K]) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -281,7 +338,9 @@ export function PublicIntakeForm({ mode = "public" }: PublicIntakeFormProps) {
         }
       }
 
-      setForm(initialState);
+      if (!documentNumber) {
+        setForm(initialState);
+      }
       setResume(null);
       setMessage(isDirectMode ? "Persona guardada directamente en el CRM." : "Registro guardado. Quedó pendiente para revisión administrativa.");
     } catch (submitError) {
@@ -477,7 +536,7 @@ export function PublicIntakeForm({ mode = "public" }: PublicIntakeFormProps) {
               {isDirectMode ? "Se guarda directo en Personas, con hoja de vida opcional." : "Se guarda como registro pendiente para revisión administrativa."}
             </p>
             <Button variant="gold" type="submit" disabled={submitting}>
-              {submitting ? "Guardando..." : isDirectMode ? "Guardar persona" : "Enviar registro"}
+              {submitting ? "Guardando..." : submitLabel ?? (isDirectMode ? "Guardar persona" : "Enviar registro")}
             </Button>
           </div>
         </form>

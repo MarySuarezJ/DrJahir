@@ -7,12 +7,12 @@
   --color-ink: #031926;
   --color-muted: #5e706f;
   --color-soft: #6f8582;
-  --color-cream: #f6fbf9;
-  --color-beige: #eef6f3;
-  --color-panel: rgba(255, 255, 255, 0.9);
-  --color-panel-strong: rgba(255, 255, 255, 0.96);
-  --color-line: rgba(70, 129, 137, 0.24);
-  --color-line-strong: rgba(70, 129, 137, 0.38);
+  --color-cream: #ffffff;
+  --color-beige: #edf7f4;
+  --color-panel: rgba(255, 255, 255, 0.94);
+  --color-panel-strong: rgba(255, 255, 255, 0.98);
+  --color-line: rgba(70, 129, 137, 0.34);
+  --color-line-strong: rgba(70, 129, 137, 0.48);
 }
 
 html {
@@ -25,10 +25,10 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(246, 251, 249, 0.92)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(250, 253, 252, 0.96)),
     radial-gradient(circle at 14% 0%, rgba(70, 129, 137, 0.24), transparent 31%),
     radial-gradient(circle at 88% 6%, rgba(119, 172, 162, 0.34), transparent 28%),
-    linear-gradient(160deg, #ffffff 0%, #eef6f3 52%, #f4e9cd 100%);
+    linear-gradient(160deg, #ffffff 0%, #edf7f4 58%, #dceeea 100%);
   color: var(--color-ink);
   font-family: var(--font-manrope), sans-serif;
 }

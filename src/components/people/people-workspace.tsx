@@ -127,22 +127,17 @@ function isLeader(person: PersonRecord) {
   return person.supportLabel.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes("lider");
 }
 
-type PeopleWorkspaceProps = {
-  initialMode?: "view" | "create";
-};
-
 type PeopleMode = "view" | "create" | "edit";
 
-export function PeopleWorkspace({ initialMode = "view" }: PeopleWorkspaceProps = {}) {
+export function PeopleWorkspace() {
   const router = useRouter();
-  const startsCreating = initialMode === "create";
   const [people, setPeople] = useState<PersonRecord[]>(peopleSeed);
-  const [selectedId, setSelectedId] = useState(startsCreating ? "" : peopleSeed[0]?.id ?? "");
+  const [selectedId, setSelectedId] = useState(peopleSeed[0]?.id ?? "");
   const [selectedLeaderDocument, setSelectedLeaderDocument] = useState(peopleSeed.find(isLeader)?.documentNumber ?? "");
   const [search, setSearch] = useState("");
   const [municipalityFilter, setMunicipalityFilter] = useState("all");
-  const [draft, setDraft] = useState<PersonRecord>(startsCreating ? blankPerson() : peopleSeed[0] ?? blankPerson());
-  const [mode, setMode] = useState<PeopleMode>(startsCreating ? "create" : "view");
+  const [draft, setDraft] = useState<PersonRecord>(peopleSeed[0] ?? blankPerson());
+  const [mode, setMode] = useState<PeopleMode>("view");
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const [viewerName, setViewerName] = useState("");
   const [syncMessage, setSyncMessage] = useState("");
@@ -170,21 +165,12 @@ export function PeopleWorkspace({ initialMode = "view" }: PeopleWorkspaceProps =
     const nextLeader = nextSelected && isLeader(nextSelected) ? nextSelected : nextPeople.find(isLeader);
 
     setPeople(nextPeople);
-    if (startsCreating && !preferredDocumentNumber) {
-      setSelectedId("");
-      setDraft(blankPerson());
-      setMode("create");
-      setSelectedLeaderDocument(nextPeople.find(isLeader)?.documentNumber ?? "");
-      setSyncMessage(nextPeople.length > 0 ? "Datos cargados desde Supabase. Completa el nuevo registro." : "Supabase conectado. Completa el primer registro.");
-      return;
-    }
-
     setSelectedId(nextSelected?.id ?? "");
     setDraft(nextSelected ?? blankPerson());
-    setMode(nextSelected ? "view" : "create");
+    setMode("view");
     setSelectedLeaderDocument(nextLeader?.documentNumber ?? "");
     setSyncMessage(nextPeople.length > 0 ? "Datos cargados desde Supabase." : "Supabase conectado. Aún no hay personas cargadas.");
-  }, [startsCreating]);
+  }, []);
 
   useEffect(() => {
     if (hasSupabaseBrowserConfig()) {
@@ -251,10 +237,7 @@ export function PeopleWorkspace({ initialMode = "view" }: PeopleWorkspaceProps =
   }
 
   function editPerson(person: PersonRecord) {
-    setSelectedId(person.id);
-    setMode("edit");
-    syncDraft(person);
-    if (isLeader(person)) setSelectedLeaderDocument(person.documentNumber);
+    router.push(`/dashboard/people/${encodeURIComponent(person.documentNumber)}/edit`);
   }
 
   function createNew() {

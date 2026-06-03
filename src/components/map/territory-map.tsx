@@ -108,14 +108,14 @@ export default function TerritoryMap() {
     <div className="overflow-hidden rounded-[20px] border border-brand-line bg-white shadow-panel">
       <style>{`
         .leaflet-tooltip {
-          background: rgba(255,250,240,0.96) !important;
-          border: 1px solid rgba(151,119,63,0.22) !important;
+          background: rgba(255,255,255,0.96) !important;
+          border: 1px solid rgba(70,129,137,0.28) !important;
           border-radius: 14px !important;
           color: #273241 !important;
           padding: 10px 14px !important;
           font-size: 13px !important;
           line-height: 1.7 !important;
-          box-shadow: 0 8px 32px rgba(61,49,29,0.14) !important;
+          box-shadow: 0 8px 32px rgba(3,25,38,0.12) !important;
           backdrop-filter: blur(14px) !important;
           pointer-events: none !important;
         }
@@ -124,8 +124,8 @@ export default function TerritoryMap() {
         .support-mid  { color: #e8c55a; font-weight: 700; }
         .support-low  { color: #60a5fa; font-weight: 700; }
         .leaflet-control-zoom { border: none !important; }
-        .leaflet-control-zoom a { background: rgba(255,250,240,0.94) !important; color: #273241 !important; border: 1px solid rgba(151,119,63,0.22) !important; border-radius: 8px !important; margin-bottom: 4px !important; }
-        .leaflet-control-zoom a:hover { background: rgba(234,212,162,0.55) !important; }
+        .leaflet-control-zoom a { background: rgba(255,255,255,0.95) !important; color: #031926 !important; border: 1px solid rgba(70,129,137,0.28) !important; border-radius: 8px !important; margin-bottom: 4px !important; }
+        .leaflet-control-zoom a:hover { background: rgba(119,172,162,0.18) !important; }
       `}</style>
 
       <div className="relative">

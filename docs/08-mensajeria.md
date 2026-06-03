@@ -90,6 +90,44 @@ El endpoint resuelve estas audiencias desde `personas`:
 
 Para cumpleaños se requiere `personas.fecha_nacimiento`. La plantilla Excel ya incluye `fecha_nacimiento`.
 
+## Cumpleaños automático diario
+
+El endpoint `/api/cron/birthdays` procesa todos los días la audiencia `Cumpleaños de hoy`.
+
+Funcionamiento:
+
+- Lee personas desde `personas.fecha_nacimiento`.
+- Busca una fecha importante activa con `date_type = 'birthday'` en `fechas_importantes`.
+- Usa el `channel` y `message_template` de esa fecha importante.
+- Si no existe plantilla activa, usa este mensaje por defecto: `Hola {nombre}, desde el equipo del Dr. Jahir te deseamos un feliz cumpleaños.`
+- Registra el envío en `envios_mensajes` y cada destinatario en `destinatarios_mensaje`.
+- Evita duplicados usando la audiencia del día, por ejemplo `Cumpleaños de hoy 2026-06-03`.
+
+Variables necesarias:
+
+```env
+CRON_SECRET=pon_un_valor_largo_y_privado
+MESSAGING_DRY_RUN=true
+MESSAGING_MAX_RECIPIENTS=25
+```
+
+Prueba manual:
+
+```bash
+curl -H "Authorization: Bearer TU_CRON_SECRET" https://tu-dominio.com/api/cron/birthdays
+```
+
+Para producción:
+
+1. Crear en Administración una fecha importante para cumpleaños.
+2. Dejarla activa y escoger canal: WhatsApp, Correo o SMS.
+3. Escribir el mensaje usando variables como `{nombre}`, `{municipio}` o `{profesion}`.
+4. Probar con `MESSAGING_DRY_RUN=true`.
+5. Revisar `envios_mensajes` y `destinatarios_mensaje`.
+6. Configurar Resend/Twilio.
+7. Cambiar `MESSAGING_DRY_RUN=false`.
+8. Programar Cloudflare para llamar `/api/cron/birthdays` todos los días.
+
 ## Variables de mensaje
 
 Se reemplazan automáticamente:
