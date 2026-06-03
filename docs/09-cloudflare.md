@@ -19,7 +19,7 @@ En **Build configuration** deja:
 
 ```txt
 Build command:
-npm install --no-save --no-package-lock @opennextjs/cloudflare@1.19.11 && npx @opennextjs/cloudflare@1.19.11 build
+npx @opennextjs/cloudflare@1.19.11 build
 
 Deploy command:
 npx @opennextjs/cloudflare@1.19.11 deploy
@@ -34,7 +34,7 @@ npx wrangler deploy
 
 Esa combinación puede compilar Next.js pero fallar al publicar el Worker porque Wrangler intenta migrar el proyecto automáticamente en un entorno no interactivo.
 
-El paso `npm install --no-save --no-package-lock @opennextjs/cloudflare@1.19.11` instala el adaptador solo dentro del build temporal de Cloudflare. Es necesario para que `open-next.config.ts` pueda resolver `@opennextjs/cloudflare`.
+El archivo `open-next.config.ts` queda declarado sin imports para que el build de Cloudflare pueda compilarlo aunque el adaptador se ejecute por `npx`.
 
 Antes de producción conviene probar con:
 
