@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "build:cloudflare": "npx @opennextjs/cloudflare@1.19.11 build",
+    "build:cloudflare": "npm install --no-save --no-package-lock @opennextjs/cloudflare@1.19.11 && npx @opennextjs/cloudflare@1.19.11 build",
     "deploy:cloudflare": "npx @opennextjs/cloudflare@1.19.11 deploy",
     "preview:cloudflare": "npx @opennextjs/cloudflare@1.19.11 preview",
     "lint": "eslint . --ext .ts,.tsx",

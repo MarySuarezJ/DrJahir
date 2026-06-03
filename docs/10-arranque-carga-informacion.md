@@ -27,7 +27,7 @@ En Cloudflare:
 
 ```txt
 Build command:
-npx @opennextjs/cloudflare@1.19.11 build
+npm install --no-save --no-package-lock @opennextjs/cloudflare@1.19.11 && npx @opennextjs/cloudflare@1.19.11 build
 
 Deploy command:
 npx @opennextjs/cloudflare@1.19.11 deploy
