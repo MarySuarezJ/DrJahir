@@ -13,11 +13,26 @@ Flujo recomendado:
 5. Configurar las variables de entorno de Supabase, mensajería y cron.
 6. Cada vez que se haga `git push origin main`, Cloudflare construye y publica de nuevo.
 
-Para Next.js con rutas API y SSR, Cloudflare recomienda Workers con el adaptador OpenNext. En un proyecto existente, Wrangler puede detectar Next.js y generar configuración:
+Para Next.js con rutas API y SSR, Cloudflare debe construir con OpenNext.
 
-```bash
+En **Build configuration** deja:
+
+```txt
+Build command:
+npx @opennextjs/cloudflare@1.19.11 build
+
+Deploy command:
+npx @opennextjs/cloudflare@1.19.11 deploy
+```
+
+No uses esta combinación para producción:
+
+```txt
+npm run build
 npx wrangler deploy
 ```
+
+Esa combinación puede compilar Next.js pero fallar al publicar el Worker porque Wrangler intenta migrar el proyecto automáticamente en un entorno no interactivo.
 
 Antes de producción conviene probar con:
 

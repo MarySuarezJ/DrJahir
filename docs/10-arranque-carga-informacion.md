@@ -21,9 +21,20 @@ En Cloudflare:
 
 1. Abre **Workers & Pages**.
 2. Entra a `drjahir`.
-3. Abre el último despliegue fallido.
-4. Corrige variables si faltan.
-5. Presiona **Retry deployment**.
+3. Entra a **Settings**.
+4. Busca **Build configuration**.
+5. Cambia los comandos:
+
+```txt
+Build command:
+npx @opennextjs/cloudflare@1.19.11 build
+
+Deploy command:
+npx @opennextjs/cloudflare@1.19.11 deploy
+```
+
+6. Abre el último despliegue fallido.
+7. Presiona **Retry deployment**.
 
 Si vuelve a fallar, abre el log y copia las primeras líneas rojas.
 

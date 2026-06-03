@@ -1,11 +1,14 @@
 {
-  "name": "jahir-alvarez-crm-politico",
+  "name": "drjahir",
   "private": true,
   "version": "0.1.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "build:cloudflare": "npx @opennextjs/cloudflare@1.19.11 build",
+    "deploy:cloudflare": "npx @opennextjs/cloudflare@1.19.11 deploy",
+    "preview:cloudflare": "npx @opennextjs/cloudflare@1.19.11 preview",
     "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit"
   },
