@@ -29,14 +29,32 @@ npm run build
 
 ## Variables necesarias
 
+En Cloudflare no uses variables `VITE_...`. Este proyecto es Next.js, por eso las variables deben llamarse `NEXT_PUBLIC_...`.
+
 ```env
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SUPABASE_URL=https://zzcrofqaxlidzzmbowpm.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=anon_key_de_supabase
 SUPABASE_SERVICE_ROLE_KEY=
 CRON_SECRET=
 MESSAGING_DRY_RUN=true
 MESSAGING_MAX_RECIPIENTS=25
 ```
+
+Importante:
+
+- `NEXT_PUBLIC_SUPABASE_URL` debe empezar por `https://` y terminar en `.supabase.co`.
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` es el JWT largo que empieza por `eyJ...` y tiene rol `anon`.
+- `SUPABASE_SERVICE_ROLE_KEY` es el JWT largo que empieza por `eyJ...` y tiene rol `service_role`; debe guardarse como secreto.
+- La key que empieza por `sb_publishable_...` no es la URL. No la uses en `NEXT_PUBLIC_SUPABASE_URL`.
+- `CRON_SECRET` lo inventas tú: un texto largo privado, por ejemplo una frase aleatoria con números.
+
+Mientras estás probando, deja:
+
+```env
+MESSAGING_DRY_RUN=true
+```
+
+Así los mensajes se registran como simulados y no se envían de verdad.
 
 Correo:
 
