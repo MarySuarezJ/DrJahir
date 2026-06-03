@@ -1,5 +1,45 @@
 # Cloudflare: despliegue y cron de cumpleaños
 
+## Despliegue manual por comandos
+
+Este es el flujo recomendado actual para este proyecto. No depende del build automático de GitHub.
+
+Primera vez en una máquina:
+
+```bash
+npm install
+npm install --save-dev @opennextjs/cloudflare@1.19.11 wrangler@4.96.0 --registry=https://registry.npmmirror.com --strict-ssl=false
+npx wrangler login
+```
+
+Cada vez que quieras publicar cambios:
+
+```bash
+npm run build:cloudflare
+npm run deploy:cloudflare
+```
+
+El deploy usa `--keep-vars` para conservar variables creadas desde el panel de Cloudflare.
+
+Si alguna vez las variables públicas se pierden, vuelve a desplegar pasando las variables:
+
+```bash
+npx wrangler deploy --keep-vars --var NEXT_PUBLIC_SUPABASE_URL:https://zzcrofqaxlidzzmbowpm.supabase.co --var NEXT_PUBLIC_SUPABASE_ANON_KEY:anon_key_de_supabase --var MESSAGING_DRY_RUN:true --var MESSAGING_MAX_RECIPIENTS:30
+```
+
+Los secretos se cargan aparte:
+
+```bash
+npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY --name drjahir
+npx wrangler secret put CRON_SECRET --name drjahir
+```
+
+URL publicada:
+
+```txt
+https://drjahir.msuarez59785.workers.dev
+```
+
 ## Despliegue automático desde GitHub
 
 Sí se puede conectar Cloudflare con GitHub para que cada `git push` a `main` despliegue la aplicación.
